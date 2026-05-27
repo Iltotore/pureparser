@@ -1,0 +1,18 @@
+//| mill-version: 1.1.6
+
+import mill.*, scalalib.*, scalafmt.*
+
+object `package` extends ScalaModule, ScalafmtModule:
+
+  def scalaVersion = "3.3.7"
+
+  def mvnDeps = Seq(
+    mvn"com.github.ghostdogpr::purelogic:0.2.3"
+  )
+
+  def scalacOptions = Seq(
+    "-Wvalue-discard", 
+    "-Wnonunit-statement", 
+    "-Wconf:msg=(unused.*value|discarded.*value|pure.*statement):error",
+    "-language:strictEquality"
+  )

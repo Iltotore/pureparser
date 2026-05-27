@@ -1,0 +1,8 @@
+.bloop
+.bsp
+.env
+.metals
+.vscode
+node_modules
+out
+*.iml
