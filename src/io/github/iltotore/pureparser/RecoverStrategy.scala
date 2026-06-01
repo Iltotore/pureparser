@@ -31,11 +31,11 @@ object RecoverStrategy:
 
   def nestedDelimiters[I, A](start: I, end: I, fallback: A, otherDelimiters: (I, I)*)(using CanEqual[I, I]): RecoverStrategy[I, A] = new RecoverStrategy:
     override def apply(parser: Parser[I, A]): Parser[I, A] =
-      def outerBlock: Parser[I, Any] = Parser.between(Parser.literal(start), rec, Parser.literal(end))
+      def outerBlock: Parser[I, Any] = Parser.inOrder(Parser.literal(start), rec, Parser.literal(end))
 
       //The compiler needed a bit of help to avoid inferring the wrong type/eagerly evaluate the context functions
       def nestedBlocks: Parser[I, Any] = Parser.firstOfSeq(
-        outerBlock +: otherDelimiters.map[ByName ?=> Parser[I, Any]]((s, e) => Parser.between(Parser.literal(s), rec, Parser.literal(end)))
+        outerBlock +: otherDelimiters.map[ByName ?=> Parser[I, Any]]((s, e) => Parser.inOrder(Parser.literal(s), rec, Parser.literal(end)))
       )
 
       def allDelimiterTokens = start +: end +: otherDelimiters.flatMap(Seq(_, _))
@@ -48,5 +48,5 @@ object RecoverStrategy:
         )
       )
 
-      Parser.between(Parser.literal(start), rec, Parser.literal(end))
+      Parser.inOrder(Parser.literal(start), Parser.unit(rec), Parser.literal(end))
       fallback

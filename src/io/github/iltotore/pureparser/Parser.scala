@@ -6,6 +6,7 @@ import io.github.iltotore.pureparser.util.ByName
 import io.github.iltotore.pureparser.util.Zip
 import scala.annotation.tailrec
 import scala.annotation.nowarn
+import scala.compiletime.erasedValue
 
 type Parser[-I, +A] = (State[Int], Reader[List[I]], Writer[ParseError], Abort[Unit]) ?=> A
 
@@ -93,11 +94,14 @@ object Parser:
       advance(1)
       skipUntil(until)
 
-  def between[I, A](left: Parser[I, Unit], parser: Parser[I, A], right: Parser[I, Unit]): Parser[I, A] =
-    left
-    val result = parser
-    right
-    result
+  inline def inOrder[I, T <: Tuple](parsers: T): Parser[I, Zip.All[T]] =
+    val parserList = parsers.toList.asInstanceOf[List[Any]]
+    val zips = Zip.foldingAll[T]
+    parserList
+      .zip(zips)
+      .foldRight[Any](()):
+        case ((value, zip), tail) => zip.zip(value, tail)
+      .asInstanceOf[Zip.All[T]]
 
   def debug[I, A](parser: Parser[I, A], name: String): Parser[I, A] =
     val token =
