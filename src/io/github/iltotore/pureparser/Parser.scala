@@ -3,6 +3,7 @@ package io.github.iltotore.pureparser
 import purelogic.*
 import scala.util.matching.Regex
 import io.github.iltotore.pureparser.util.ByName
+import io.github.iltotore.pureparser.util.Zip
 import scala.annotation.tailrec
 import scala.annotation.nowarn
 
@@ -43,6 +44,11 @@ object Parser:
   def eof[I]: Parser[I, Unit] =
     if Parser.isEOF then ()
     else errorAndAbort(ParseError.UnexpectedToken("End of file"))
+
+  def span[I, A](parser: Parser[I, A])(using zip: Zip[A, Span]): Parser[I, zip.Zipped] =
+    val start = get
+    val result = parser
+    zip.zip(result, Span(start, get))
 
   def literal[I](value: I)(using CanEqual[I, I]): Parser[I, Unit] =
     if next == value then ()
@@ -165,4 +171,3 @@ object Parser:
     else
       val head = parser
       head :: rec(Nil)
-  
