@@ -43,7 +43,7 @@ object Parser:
 
   def eof[I]: Parser[I, Unit] =
     if Parser.isEOF then ()
-    else errorAndAbort(ParseError.UnexpectedToken("End of file"))
+    else errorAndAbort(ParseError.UnexpectedToken("End of file", get))
 
   def span[I, A](parser: Parser[I, A])(using zip: Zip[A, Span]): Parser[I, zip.Zipped] =
     val start = get
@@ -52,20 +52,20 @@ object Parser:
 
   def literal[I](value: I)(using CanEqual[I, I]): Parser[I, Unit] =
     if next == value then ()
-    else errorAndAbort(ParseError.UnexpectedToken(value.toString))
+    else errorAndAbort(ParseError.UnexpectedToken(value.toString, get))
 
   def literal(value: String): Parser[Char, Unit] =
     var i = 0
     val start = get
 
     while i < value.size do
-      if next != value(i) then errorAndAbort(ParseError.UnexpectedToken(value))
+      if next != value(i) then errorAndAbort(ParseError.UnexpectedToken(value, get))
       i += 1
 
   def oneOf[I](values: I*): Parser[I, I] =
     val result = next
     if values.contains(result) then result
-    else errorAndAbort(ParseError.UnexpectedToken(values.mkString("One of: ", ", ", "")))
+    else errorAndAbort(ParseError.UnexpectedToken(values.mkString("One of: ", ", ", ""), get))
 
   def oneOf(values: String): Parser[Char, Char] =
     oneOf[Char](values*)
@@ -75,7 +75,7 @@ object Parser:
       case Some(value) =>
         advance(value.length)
         value
-      case None => errorAndAbort(ParseError.UnexpectedToken(s"Text matching regex $pattern"))
+      case None => errorAndAbort(ParseError.UnexpectedToken(s"Text matching regex $pattern", get))
     
   def regex(pattern: String): Parser[Char, String] = regex(pattern.r)
 
@@ -122,19 +122,19 @@ object Parser:
     recover(parser)(_ => Parser.errorAndAbort(error))
 
   def expect[I, A](parser: Parser[I, A], expected: String): Parser[I, A] =
-    Parser.orError(parser, ParseError.UnexpectedToken(expected))
+    Parser.orError(parser, ParseError.UnexpectedToken(expected, get))
 
   def recoverWith[I, A](parser: Parser[I, A], strategy: RecoverStrategy[I, A]): Parser[I, A] =
     recoverKeepLog(parser)(_ => Writer((strategy(parser)))._2)
 
   def not[I, A](parser: Parser[I, A]): Parser[I, Unit] =
     if Parser.isSuccessful(parser) then
-      Parser.errorAndAbort(ParseError.UnexpectedToken("Input not validating this parser"))
+      Parser.errorAndAbort(ParseError.UnexpectedToken("Input not validating this parser", get))
     else ()
 
   def andCheck[I, A](parser: Parser[I, A], check: Parser[I, Unit]): Parser[I, A] =
     if Parser.isSuccessful(check) then parser
-    else Parser.errorAndAbort(ParseError.UnexpectedToken("Something else"))
+    else Parser.errorAndAbort(ParseError.UnexpectedToken("Something else", get))
 
   def repeatUntil[I, A](parser: Parser[I, A], until: Parser[I, Unit]): Parser[I, List[A]] =
 
