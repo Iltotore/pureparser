@@ -48,12 +48,16 @@ object Parser:
     else errorAndAbort(ParseError.UnexpectedToken("End of file", get))
 
   def debug[I, A](parser: Parser[I, A], name: String): Parser[I, A] =
-    val token =
+    val start =
       if Parser.isEOF then "<EOF>"
-      else Parser.peek.toString 
-    println(s"Starting $name at $get. Next token: $token")
+      else Parser.peek.toString
+    println(s"Starting $name at $get. Next token: $start")
     val result = parser
-    println(s"Ending $name at $get. Next token: $token. Result: $result")
+
+    val end =
+      if Parser.isEOF then "<EOF>"
+      else Parser.peek.toString
+    println(s"Ending $name at $get. Next token: $end. Result: $result")
     result
 
   def span[I, A](parser: Parser[I, A])(using zip: Zip[A, Span]): Parser[I, zip.Zipped] =
@@ -91,6 +95,17 @@ object Parser:
       case None => errorAndAbort(ParseError.UnexpectedToken(s"Text matching regex $pattern", get))
     
   def regex(pattern: String): Parser[Char, String] = regex(pattern.r)
+
+  def whitespace: Parser[Char, Unit] =
+    val start = get
+    if next.isWhitespace then ()
+    else Parser.errorAndAbort(ParseError.UnexpectedToken("Whitespace", start))
+
+  def spaced[A](parser: Parser[Char, A]): Parser[Char, A] =
+    Parser.repeatDiscard0(Parser.whitespace, "prefix")
+    val result = parser
+    Parser.repeatDiscard0(Parser.whitespace)
+    result
 
   @nowarn("msg=unused")
   def as[I, A](parser: Parser[I, Any], value: A): Parser[I, A] =

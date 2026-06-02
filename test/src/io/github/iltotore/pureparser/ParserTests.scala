@@ -67,6 +67,14 @@ object ParserTests extends TestSuite:
       test("unexpected") - assertErrors(parser, "abcd1234"):
         case Seq(ParseError.UnexpectedToken(_, 0)) =>
 
+    test("spaced"):
+      val parser: Parser[Char, Unit] = Parser.spaced(Parser.literal('a'))
+
+      test("noSpace") - assertSuccess(parser, "a")(())
+      test("leadingSpaces") - assertSuccess(parser, "\t\n a")(())
+      test("trailingSpaces") - assertSuccess(parser, "a \t\n")(())
+      test("both") - assertSuccess(parser, "\t\n a \t\n")(())
+
     test("as"):
       val parser: Parser[Char, Boolean] = Parser.as(Parser.literal("true"), true)
 
