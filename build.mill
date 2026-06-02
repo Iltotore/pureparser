@@ -16,3 +16,7 @@ object `package` extends ScalaModule, ScalafmtModule:
     "-Wconf:msg=(unused.*value|discarded.*value|pure.*statement):error",
     "-language:strictEquality"
   )
+
+  object test extends ScalaTests with TestModule.Utest:
+
+    def utestVersion = "0.9.5"

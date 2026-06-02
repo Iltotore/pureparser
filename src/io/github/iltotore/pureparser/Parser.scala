@@ -14,7 +14,8 @@ object Parser:
 
   def apply[I, A](input: List[I])(parser: Parser[I, A]): ParseResult[A] =
     val (errors, output) = Logic.run(state = 0, reader = input)(parser)
-    ParseResult(output.toOption.map(_._2), errors)
+    val outputOpt = output.toOption
+    ParseResult(outputOpt.map(_._2), errors, outputOpt.fold(0)(_._1))
 
   def apply[A](input: String)(parser: Parser[Char, A]): ParseResult[A] =
     apply(input.toList)(parser)
@@ -46,27 +47,38 @@ object Parser:
     if Parser.isEOF then ()
     else errorAndAbort(ParseError.UnexpectedToken("End of file", get))
 
+  def debug[I, A](parser: Parser[I, A], name: String): Parser[I, A] =
+    val token =
+      if Parser.isEOF then "<EOF>"
+      else Parser.peek.toString 
+    println(s"Starting $name at $get. Next token: $token")
+    val result = parser
+    println(s"Ending $name at $get. Next token: $token. Result: $result")
+    result
+
   def span[I, A](parser: Parser[I, A])(using zip: Zip[A, Span]): Parser[I, zip.Zipped] =
     val start = get
     val result = parser
     zip.zip(result, Span(start, get))
 
   def literal[I](value: I)(using CanEqual[I, I]): Parser[I, Unit] =
+    val start = get
     if next == value then ()
-    else errorAndAbort(ParseError.UnexpectedToken(value.toString, get))
+    else errorAndAbort(ParseError.UnexpectedToken(value.toString, start))
 
   def literal(value: String): Parser[Char, Unit] =
     var i = 0
     val start = get
 
     while i < value.size do
-      if next != value(i) then errorAndAbort(ParseError.UnexpectedToken(value, get))
+      if next != value(i) then errorAndAbort(ParseError.UnexpectedToken(value, start))
       i += 1
 
   def oneOf[I](values: I*): Parser[I, I] =
+    val start = get
     val result = next
     if values.contains(result) then result
-    else errorAndAbort(ParseError.UnexpectedToken(values.mkString("One of: ", ", ", ""), get))
+    else errorAndAbort(ParseError.UnexpectedToken(values.mkString("One of: ", ", ", ""), start))
 
   def oneOf(values: String): Parser[Char, Char] =
     oneOf[Char](values*)
@@ -80,19 +92,19 @@ object Parser:
     
   def regex(pattern: String): Parser[Char, String] = regex(pattern.r)
 
+  @nowarn("msg=unused")
+  def as[I, A](parser: Parser[I, Any], value: A): Parser[I, A] =
+    parser
+    value
+
+  inline def unit[I](inline parser: Parser[I, Any]): Parser[I, Unit] = Parser.as(parser, ())
+
   def firstOfSeq[I, A](parsers: Seq[ByName ?=> Parser[I, A]]): Parser[I, A] = parsers match
     case head +: tail => recover(head(using ByName))(_ => firstOfSeq(tail))
     case _ => fail(())
 
   def firstOf[I, A](parsers: (ByName ?=> Parser[I, A])*): Parser[I, A] =
     firstOfSeq(parsers)
-
-  @tailrec
-  def skipUntil[I](until: Parser[I, Any]): Parser[I, Unit] =
-    if Parser.isSuccessful(until) then ()
-    else
-      advance(1)
-      skipUntil(until)
 
   inline def inOrder[I, T <: Tuple](parsers: T): Parser[I, Zip.All[T]] =
     val parserList = parsers.toList.asInstanceOf[List[Any]]
@@ -103,22 +115,6 @@ object Parser:
         case ((value, zip), tail) => zip.zip(value, tail)
       .asInstanceOf[Zip.All[T]]
 
-  def debug[I, A](parser: Parser[I, A], name: String): Parser[I, A] =
-    val token =
-      if Parser.isEOF then "<EOF>"
-      else Parser.peek.toString 
-    println(s"Starting $name at $get. Next token: $token")
-    val result = parser
-    println(s"Ending $name at $get. Next token: $token. Result: $result")
-    result
-
-  @nowarn("msg=unused")
-  def as[I, A](parser: Parser[I, Any], value: A): Parser[I, A] =
-    parser
-    value
-
-  inline def unit[I](inline parser: Parser[I, Any]): Parser[I, Unit] = Parser.as(parser, ())
-
   def isSuccessful[I](parser: Parser[I, Any]): Parser[I, Boolean] =
     localState(identity)(recover(Parser.as(parser, true))(_ => false))
 
@@ -126,10 +122,8 @@ object Parser:
     recover(parser)(_ => Parser.errorAndAbort(error))
 
   def expect[I, A](parser: Parser[I, A], expected: String): Parser[I, A] =
-    Parser.orError(parser, ParseError.UnexpectedToken(expected, get))
-
-  def recoverWith[I, A](parser: Parser[I, A], strategy: RecoverStrategy[I, A]): Parser[I, A] =
-    recoverKeepLog(parser)(_ => Writer((strategy(parser)))._2)
+    val start = get
+    Parser.orError(parser, ParseError.UnexpectedToken(expected, start))
 
   def not[I, A](parser: Parser[I, A]): Parser[I, Unit] =
     if Parser.isSuccessful(parser) then
@@ -139,6 +133,17 @@ object Parser:
   def andCheck[I, A](parser: Parser[I, A], check: Parser[I, Unit]): Parser[I, A] =
     if Parser.isSuccessful(check) then parser
     else Parser.errorAndAbort(ParseError.UnexpectedToken("Something else", get))
+
+  def recoverWith[I, A](parser: Parser[I, A], strategy: RecoverStrategy[I, A]): Parser[I, A] =
+    recoverKeepLog(parser)(_ => Writer((strategy(parser)))._2)
+
+  @tailrec
+  def skipUntil[I](until: Parser[I, Any]): Parser[I, Unit] =
+    if Parser.isSuccessful(until) then ()
+    else if Parser.isEOF then errorAndAbort(ParseError.EOF)
+    else
+      advance(1)
+      skipUntil(until)
 
   def repeatUntil[I, A](parser: Parser[I, A], until: Parser[I, Unit]): Parser[I, List[A]] =
 
