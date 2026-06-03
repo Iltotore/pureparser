@@ -78,6 +78,12 @@ object Parser:
       if next != value(i) then errorAndAbort(ParseError.UnexpectedToken(value, start))
       i += 1
 
+  def oneOf[I](values: Set[I]): Parser[I, I] =
+    val start = get
+    val result = next
+    if values.contains(result) then result
+    else errorAndAbort(ParseError.UnexpectedToken(values.mkString("One of: ", ", ", ""), start))
+
   def oneOf[I](values: I*): Parser[I, I] =
     val start = get
     val result = next
