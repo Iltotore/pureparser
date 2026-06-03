@@ -195,3 +195,12 @@ object Parser:
     else
       val head = parser
       head :: rec(Nil)
+
+  def separatedByReduce[I, A](parser: Parser[I, A], separator: Parser[I, (A, A) => A]): Parser[I, A] =
+
+    @tailrec
+    def rec(accumulator: A): Parser[I, A] =
+      if Parser.isSuccessful(separator) then rec(separator(accumulator, parser))
+      else accumulator
+
+    rec(parser)

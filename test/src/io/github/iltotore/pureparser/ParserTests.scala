@@ -199,3 +199,25 @@ object ParserTests extends TestSuite:
         case Seq(ParseError.UnexpectedToken(_, 2)) =>
       test("noUntil") - assertErrors(parser, "a,b"):
         case Seq(ParseError.EOF) =>
+
+    test("separatedByReduce"):
+      val intParser: Parser[Char, Int] =
+        Parser
+          .regex("[0-9]+")
+          .toIntOption
+          .getOrElse(Parser.abort)
+
+      val operatorParser: Parser[Char, (Int, Int) => Int] = Parser.firstOf(
+        Parser.as(Parser.literal('+'), _ + _),
+        Parser.as(Parser.literal('-'), _ - _)
+      )
+
+      val parser: Parser[Char, Int] = Parser.separatedByReduce(intParser, operatorParser)
+
+      test("oneElement") - assertSuccess(parser, "5")(5)
+      test("manyElements") - assertSuccess(parser, "1+2+3+4+5")(15)
+      test("untilError") - assertSuccess(parser, "1+2+3+4+5/2")(15, 9)
+      test("zeroElement") - assertErrors(parser, ""):
+        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+      test("firstInvalid") - assertErrors(parser, "a"):
+        case Seq(ParseError.UnexpectedToken(_, 0)) =>
