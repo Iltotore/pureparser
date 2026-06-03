@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Raphael",
+    "friends": [
+      "Alice"
+    ]
+  },
+  {
+    "name": "Alice",
+    "friends": [
+      "Raphaël"
+    ]
+  }
+]

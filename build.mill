@@ -3,6 +3,7 @@
 import mill.*, scalalib.*, scalafmt.*
 
 object `package` extends ScalaModule, ScalafmtModule:
+  self =>
 
   def scalaVersion = "3.3.7"
 
@@ -20,3 +21,22 @@ object `package` extends ScalaModule, ScalafmtModule:
   object test extends ScalaTests with TestModule.Utest:
 
     def utestVersion = "0.9.5"
+
+  object examples extends Module:
+
+    trait ExampleModule extends ScalaModule, ScalafmtModule:
+
+      def scalaVersion = self.scalaVersion
+
+      def scalacOptions = self.scalacOptions
+
+      def moduleDeps = Seq(self)
+
+      def mvnDeps = Seq(
+        mvn"com.lihaoyi::pprint:0.9.6"
+      )
+
+      def sources = Task.Sources(examples.moduleDir / s"${moduleSegments.last.value}.scala")
+
+    object formula extends ExampleModule
+    object json extends ExampleModule
