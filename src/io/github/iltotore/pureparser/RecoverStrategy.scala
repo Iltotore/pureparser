@@ -11,10 +11,13 @@ object RecoverStrategy:
   def firstOfSeq[I, A](strategies: Seq[ByName ?=> RecoverStrategy[I, A]]): RecoverStrategy[I, A] = new RecoverStrategy:
     override def apply(parser: Parser[I, A]): Parser[I, A] = strategies match
       case head +: tail => recover(head(using ByName)(parser))(_ => firstOfSeq(tail)(parser))
-      case _ => fail(())
+      case _ => Parser.abort
 
   def firstOf[I, A](strategies: (ByName ?=> RecoverStrategy[I, A])*): RecoverStrategy[I, A] =
     firstOfSeq(strategies)
+
+  def viaParser[I, A](parser: Parser[I, A]): RecoverStrategy[I, A] = new RecoverStrategy:
+    override def apply(ignored: Parser[I, A]): Parser[I, A] = parser
 
   def skipUntil[I, A](until: Parser[I, Any], fallback: A): RecoverStrategy[I, A] = new RecoverStrategy:
     override def apply(parser: Parser[I, A]): Parser[I, A] = Parser.as(Parser.skipUntil(until), fallback)

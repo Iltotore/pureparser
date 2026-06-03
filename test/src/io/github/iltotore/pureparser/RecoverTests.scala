@@ -29,6 +29,15 @@ object RecoverTests extends TestSuite:
         Parser.literal(']')
       )
 
+    test("viaParser"):
+      val parser: Parser[Char, List[Value]] = arrayParser(
+        Parser.recoverWith(elementParser, RecoverStrategy.viaParser(Parser.as(Parser.literal("vrai"), Value.VBool(true))))
+      )
+
+      test("success") - assertSuccess(parser, "[true,vrai]")(List(Value.VBool(true), Value.VBool(true)))
+      test("invalid") - assertErrors(parser, "[true,faux]"):
+        case Seq(ParseError.UnexpectedToken(_, 6)) =>
+
     test("skipUntil"):
       val parser: Parser[Char, List[Value]] = arrayParser(
         Parser.recoverWith(elementParser, RecoverStrategy.skipUntil(Parser.oneOf(",]"), Value.VInvalid))
