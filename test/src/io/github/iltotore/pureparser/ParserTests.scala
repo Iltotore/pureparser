@@ -200,6 +200,17 @@ object ParserTests extends TestSuite:
       test("noUntil") - assertErrors(parser, "a,b"):
         case Seq(ParseError.EOF) =>
 
+    test("separatedByUntil"):
+      val parser: Parser[Char, List[Char]] = Parser.separatedBy(
+        Parser.oneOf("ab"),
+        Parser.literal(',')
+      )
+
+      test("noElement") - assertSuccess(parser, "")(Nil)
+      test("single") - assertSuccess(parser, "a")(List('a'))
+      test("multiple") - assertSuccess(parser, "a,b,a")(List('a', 'b', 'a'))
+      test("untilError") - assertSuccess(parser, "a,b,a]")(List('a', 'b', 'a'), 5)
+
     test("separatedByReduce"):
       val intParser: Parser[Char, Int] =
         Parser
@@ -214,10 +225,10 @@ object ParserTests extends TestSuite:
 
       val parser: Parser[Char, Int] = Parser.separatedByReduce(intParser, operatorParser)
 
-      test("oneElement") - assertSuccess(parser, "5")(5)
-      test("manyElements") - assertSuccess(parser, "1+2+3+4+5")(15)
+      test("single") - assertSuccess(parser, "5")(5)
+      test("multiple") - assertSuccess(parser, "1+2+3+4+5")(15)
       test("untilError") - assertSuccess(parser, "1+2+3+4+5/2")(15, 9)
-      test("zeroElement") - assertErrors(parser, ""):
+      test("noElement") - assertErrors(parser, ""):
         case Seq(ParseError.UnexpectedToken(_, 0)) =>
       test("firstInvalid") - assertErrors(parser, "a"):
         case Seq(ParseError.UnexpectedToken(_, 0)) =>

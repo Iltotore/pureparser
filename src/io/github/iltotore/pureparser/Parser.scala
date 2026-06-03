@@ -52,12 +52,12 @@ object Parser:
       if Parser.isEOF then "<EOF>"
       else Parser.peek.toString
     println(s"Starting $name at $get. Next token: $start")
-    val result = parser
+    val (errors, result) = Writer.capture(parser)
 
     val end =
       if Parser.isEOF then "<EOF>"
       else Parser.peek.toString
-    println(s"Ending $name at $get. Next token: $end. Result: $result")
+    println(s"Ending $name at $get. Next token: $end. Result: $result. Errors: $errors")
     result
 
   def span[I, A](parser: Parser[I, A])(using zip: Zip[A, Span]): Parser[I, zip.Zipped] =
@@ -131,7 +131,7 @@ object Parser:
       .asInstanceOf[Zip.All[T]]
 
   def isSuccessful[I](parser: Parser[I, Any]): Parser[I, Boolean] =
-    localState(identity)(recover(Parser.as(parser, true))(_ => false))
+    localState(identity)(recover(Writer(Parser.as(parser, true))._2)(_ => false))
 
   def orError[I, A](parser: Parser[I, A], error: ParseError): Parser[I, A] =
     recover(parser)(_ => Parser.errorAndAbort(error))
@@ -150,7 +150,7 @@ object Parser:
     else Parser.errorAndAbort(ParseError.UnexpectedToken("Something else", get))
 
   def recoverWith[I, A](parser: Parser[I, A], strategy: RecoverStrategy[I, A]): Parser[I, A] =
-    recoverKeepLog(parser)(_ => Writer((strategy(parser)))._2)
+    recoverKeepLog(parser)(_ => Writer(strategy(parser))._2)
 
   @tailrec
   def skipUntil[I](until: Parser[I, Any]): Parser[I, Unit] =
@@ -195,6 +195,18 @@ object Parser:
     else
       val head = parser
       head :: rec(Nil)
+
+  def separatedBy[I, A](parser: Parser[I, A], separator: Parser[I, Unit]): Parser[I, List[A]] =
+
+    @tailrec
+    def rec(accumulator: List[A]): Parser[I, List[A]] =
+      if Parser.isSuccessful(separator) then
+        separator
+        rec(accumulator :+ parser)
+      else accumulator
+
+    if Parser.isSuccessful(parser) then rec(List(parser))
+    else Nil
 
   def separatedByReduce[I, A](parser: Parser[I, A], separator: Parser[I, (A, A) => A]): Parser[I, A] =
 
