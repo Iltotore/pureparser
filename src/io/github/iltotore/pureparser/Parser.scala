@@ -102,15 +102,27 @@ object Parser:
     
   def regex(pattern: String): Parser[Char, String] = regex(pattern.r)
 
+  val newline: Parser[Char, Unit] = Parser.firstOf(
+    Parser.literal("\r\n"),
+    Parser.literal('\r'),
+    Parser.literal('\n')
+  )
+
   def whitespace: Parser[Char, Unit] =
     val start = get
     if next.isWhitespace then ()
     else Parser.errorAndAbort(ParseError.UnexpectedToken("Whitespace", start))
 
-  def spaced[A](parser: Parser[Char, A]): Parser[Char, A] =
-    Parser.repeatDiscard0(Parser.whitespace, "prefix")
+  val inlineWhitespace: Parser[Char, Unit] = Parser.andCheck(Parser.whitespace, Parser.not(Parser.newline))
+
+  def spaced[A](parser: Parser[Char, A], skipNewlines: Boolean = true): Parser[Char, A] =
+    val skipParser: Parser[Char, Unit] =
+      if skipNewlines then Parser.whitespace
+      else Parser.inlineWhitespace
+
+    Parser.repeatDiscard0(skipParser)
     val result = parser
-    Parser.repeatDiscard0(Parser.whitespace)
+    Parser.repeatDiscard0(skipParser)
     result
 
   @nowarn("msg=unused")

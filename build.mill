@@ -39,4 +39,5 @@ object `package` extends ScalaModule, ScalafmtModule:
       def sources = Task.Sources(examples.moduleDir / s"${moduleSegments.last.value}.scala")
 
     object formula extends ExampleModule
+    object indentation extends ExampleModule
     object json extends ExampleModule
