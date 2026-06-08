@@ -1,4 +1,4 @@
-package io.github.iltotore.pureparser.formula
+package io.github.iltotore.pureparser.example.formula
 
 import io.github.iltotore.pureparser.*
 import purelogic.*

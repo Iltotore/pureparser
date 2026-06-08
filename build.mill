@@ -1,6 +1,9 @@
 //| mill-version: 1.1.6
+//| mvnDeps:
+//| - "io.github.iltotore::mill-tailwind::0.1.1"
 
-import mill.*, scalalib.*, scalafmt.*
+import mill.*, scalalib.*, scalajslib.*, scalafmt.*
+import io.github.iltotore.tailwind.TailwindModule
 
 object `package` extends ScalaModule, ScalafmtModule:
   self =>
@@ -8,7 +11,7 @@ object `package` extends ScalaModule, ScalafmtModule:
   def scalaVersion = "3.3.7"
 
   def mvnDeps = Seq(
-    mvn"com.github.ghostdogpr::purelogic:0.2.3"
+    mvn"com.github.ghostdogpr::purelogic::0.2.3"
   )
 
   def scalacOptions = Seq(
@@ -18,26 +21,62 @@ object `package` extends ScalaModule, ScalafmtModule:
     "-language:strictEquality"
   )
 
+  object js extends ScalaJSModule:
+
+    def scalaVersion = self.scalaVersion
+
+    def scalaJSVersion = "1.21.0"
+
+    def mvnDeps = self.mvnDeps
+
+    def sources = self.sources
+
+    def scalacOptions = self.scalacOptions
+
+    def artifactName = self.artifactName
+
   object test extends ScalaTests with TestModule.Utest:
 
     def utestVersion = "0.9.5"
 
+  trait ExampleModule extends ScalaModule:
+
+    def scalaVersion = self.scalaVersion
+
+    def scalacOptions = self.scalacOptions
+
+    def moduleDeps = Seq(self)
+
+    def mvnDeps = Seq(
+      mvn"com.lihaoyi::pprint::0.9.6"
+    )
+
+    def sources = Task.Sources(examples.moduleDir / s"${moduleSegments.last.value}.scala")
+
   object examples extends Module:
-
-    trait ExampleModule extends ScalaModule, ScalafmtModule:
-
-      def scalaVersion = self.scalaVersion
-
-      def scalacOptions = self.scalacOptions
-
-      def moduleDeps = Seq(self)
-
-      def mvnDeps = Seq(
-        mvn"com.lihaoyi::pprint:0.9.6"
-      )
-
-      def sources = Task.Sources(examples.moduleDir / s"${moduleSegments.last.value}.scala")
-
     object formula extends ExampleModule
     object indentation extends ExampleModule
     object json extends ExampleModule
+
+  object web extends ScalaJSModule, ScalafmtModule, TailwindModule:
+    def scalaVersion = "3.8.3"
+
+    def scalaJSVersion = self.js.scalaJSVersion
+
+    def tailwindVersion = "4.3.0"
+
+    def scalacOptions = self.scalacOptions
+
+    val exampleSources: Seq[Task[Seq[PathRef]]] = examples.moduleDirectChildren.collect:
+      case example: ExampleModule => example.sources
+
+    def moduleDeps = Seq(self.js)
+
+    def sources = Task.sequence(super.sources +: exampleSources)().flatten
+
+    def mvnDeps = Seq(
+      mvn"io.indigoengine::tyrian-io::0.14.0",
+      mvn"com.lihaoyi::pprint::0.9.6"
+    )
+
+    def moduleKind = Task(mill.scalajslib.api.ModuleKind.ESModule)

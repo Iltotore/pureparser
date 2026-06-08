@@ -1,4 +1,4 @@
-package io.github.iltotore.pureparser.indent
+package io.github.iltotore.pureparser.example.indent
 
 import io.github.iltotore.pureparser.*
 import io.github.iltotore.pureparser.util.ByName
