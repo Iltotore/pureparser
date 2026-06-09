@@ -18,6 +18,7 @@ object Main extends TyrianIOApp[Msg, Model]:
 
   override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) =
     case Msg.NoOp => (model, Cmd.None)
+    case Msg.SetExample(example, input) => (model.copy(selectedExample = example), Cmd.emit(Msg.SetInput(input)))
     case Msg.SetInput(value) => (
         model.copy(
           input = value,
@@ -30,7 +31,7 @@ object Main extends TyrianIOApp[Msg, Model]:
     p(cls := "font-bold")(example.name),
     ul(
       example.samples.updated("Blank", "").map((name, content) =>
-        li(button(onClick(Msg.SetInput(content)))(name))
+        li(button(onClick(Msg.SetExample(example, content)))(name))
       )
         .toSeq*
     )
@@ -42,8 +43,12 @@ object Main extends TyrianIOApp[Msg, Model]:
   )
 
   def textZone(attributes: Attr[Msg]*)(content: String): Html[Msg] = textarea(
-    ((cls := "textarea textarea-md w-full flex-1 resize-none rounded-box border-none font-mono") +: attributes)*
-  )(content)
+    (
+      Seq(
+        cls := "textarea textarea-md w-full flex-1 resize-none rounded-box border-none font-mono",
+        value := content
+      ) ++ attributes
+    )*)()
 
   def viewTree(tree: Tree): Html[Msg] = tree match
     case Tree.Leaf(name, value) => li(a(s"$name = $value"))
