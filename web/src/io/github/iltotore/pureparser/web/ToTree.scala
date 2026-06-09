@@ -54,7 +54,7 @@ object ToTree extends ToTreeLowPriority:
   given [A](using ToTree[A]): ToTree[Map[String, A]] = (name, fields) =>
     Tree.Node(name, fields.map((fieldName, fieldValue) => ToTree(fieldName, fieldValue)).toList)
 
-  given ToTree[Span] = ToTree.derived
+  given ToTree[Span] = (name, value) => Tree.Leaf(name, s"[${value.start}:${value.end}]")
 
 trait ToTreeLowPriority:
 

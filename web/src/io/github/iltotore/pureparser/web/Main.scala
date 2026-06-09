@@ -5,6 +5,8 @@ import io.github.iltotore.pureparser.Parser
 import scala.scalajs.js.annotation.JSExportTopLevel
 import tyrian.*
 import tyrian.Html.*
+import io.github.iltotore.pureparser.ParseError
+import scala.collection.mutable.ListBuffer
 
 @JSExportTopLevel("TyrianApp")
 object Main extends TyrianIOApp[Msg, Model]:
@@ -68,9 +70,16 @@ object Main extends TyrianIOApp[Msg, Model]:
       fieldBox("Input")(
         textZone(onInput(Msg.SetInput.apply))(model.input)
       ),
-      fieldBox("Output")(
-        ul(cls := "menu w-full h-full")(
-          model.result.output.fold(div())(viewTree)
+      div(cls := "w-full h-full flex flex-col gap-5")(
+        fieldBox("Output")(
+          ul(cls := "menu w-full h-full")(
+            model.result.output.fold(div())(viewTree)
+          )
+        ),
+        fieldBox("Errors")(
+          ul(cls := "list w-full h-full")(
+            model.result.errors.map(error => li(cls := "list-row")(pprint(error).plainText))*
+          )
         )
       )
     )
