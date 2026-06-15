@@ -21,6 +21,25 @@ object `package` extends ScalaModule, ScalafmtModule:
     "-language:strictEquality"
   )
 
+  def externalMappings = Seq(
+    ".*purelogic.*" -> ("scaladoc3", "https://javadoc.io/doc/com.github.ghostdogpr/purelogic_3/latest/")
+  )
+
+  def scalaDocOptions =
+    val externalMappingsFlag =
+      externalMappings
+        .map:
+          case (regex, (docType, link)) => s"$regex::$docType::$link"
+        .mkString(",")
+
+    Seq(
+      "-project", "PureParser",
+      "-revision", "main",
+      "-source-links:github://Iltotore/pureparser",
+      s"-social-links:github::https://github.com/Iltotore/pureparser",
+      s"-external-mappings:$externalMappingsFlag"
+    )
+
   object js extends ScalaJSModule:
 
     def scalaVersion = self.scalaVersion
