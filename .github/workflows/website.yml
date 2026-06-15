@@ -32,7 +32,7 @@ jobs:
         with:
           repository: Iltotore/pureparser
       - run: |
-          git fetch --prune --unshallow --tags
+          git fetch --prune --tags
           git tag -l
 
       - uses: actions/setup-java@v4
@@ -41,7 +41,9 @@ jobs:
           java-version: '17'
 
       - name: Build website
-        run: ./millw -i web.fullLinkJS
+        run: |
+          ./millw -i web.fullLinkJS
+          ./millw -i docJar
 
       - name: Copy output files
         run: |
@@ -50,7 +52,7 @@ jobs:
           cp out/web/fullLinkJS.dest/main.js docs/examples/out/web/fullLinkJS.dest/
           cp out/web/fullLinkJS.dest/main.js.map docs/examples/out/web/fullLinkJS.dest/
           cp out/web/tailwindCSSOutput.dest/public/output.css docs/examples/out/web/tailwindCSSOutput.dest/public/
-          cp -r out/docJar.dest/docs/ docs/
+          cp -r out/docJar.dest/docs/ .
           cp index.html docs/examples/
           cp tyrianApp.js docs/examples/
 
