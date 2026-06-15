@@ -2,20 +2,19 @@ package io.github.iltotore.pureparser
 
 import purelogic.*
 import scala.util.matching.Regex
-import io.github.iltotore.pureparser.util.ByName
 import io.github.iltotore.pureparser.util.Zip
 import scala.annotation.tailrec
 import scala.annotation.nowarn
 import scala.compiletime.erasedValue
 
 /**
-  * A parser taking tokens of type [[I]], outputting a [[A]].
+  * A parser taking tokens of type `I`, outputting a `A`.
   * 
   * It is a combination of the following effects:
-  * - [[State]] of [[Int]] representing the index of the next token to read.
-  * - [[Reader]] of a [[List]] of tokens [[I]].
-  * - [[Writer]] of [[ParseError]].
-  * - [[Abort]] of [[Unit]], used to cut a path.
+  * - [[purelogic.State]] of [[Int]] representing the index of the next token to read.
+  * - [[purelogic.Reader]] of a [[List]] of tokens `I`.
+  * - [[purelogic.Writer]] of [[ParseError]].
+  * - [[purelogic.Abort]] of [[Unit]], used to cut a path.
   * 
   * @tparam I the type of a token.
   * @tparam A the output type.
@@ -202,7 +201,7 @@ object Parser:
     oneOf[Char](values*)
 
   /**
-    * Parse a [[String]] matching the given [[Regex]].
+    * Parse a [[String]] matching the given [[scala.util.matching.Regex]].
     *
     * @param pattern the regular expression describing the expected pattern.
     */
@@ -214,7 +213,7 @@ object Parser:
       case None => errorAndAbort(ParseError.UnexpectedToken(s"Text matching regex $pattern", get))
     
   /**
-    * Parse a [[String]] matching the given [[Regex]].
+    * Parse a [[String]] matching the given [[scala.util.matching.Regex]].
     *
     * @param pattern the regular expression describing the expected pattern.
     */

@@ -2,6 +2,7 @@ package io.github.iltotore.pureparser.util
 
 import scala.compiletime.erasedValue
 import scala.compiletime.summonInline
+import scala.annotation.nowarn
 
 /**
   * Typeclass to elegantly zip types into flat tuples, ignoring [[Unit]].
@@ -42,7 +43,7 @@ object Zip extends ZipLowPriority:
         case (head, tail)   => (head, tail)
 
   /**
-    * Summon [[Zip]] instances to flatten a [[Tuple]] of type [[T]] using `foldLeft`.
+    * Summon [[Zip]] instances to flatten a [[Tuple]] of type `T` using `foldLeft`.
     * 
     * @tparam T the type of the [[Tuple]] to flatten.
     * @return the list of [[Zip]] instances to `foldLeft` on the [[Tuple]] to flatten.
@@ -53,6 +54,7 @@ object Zip extends ZipLowPriority:
     case _: (head *: tail) => summonInline[Zip[head, All[tail]]].asInstanceOf[Zip[Any, Any]] :: foldingAll[tail]
 
   given Zip[Unit, Unit] with
+
     override type Zipped = Unit
     override def zip(a: Unit, b: Unit): Zipped = ()
 
