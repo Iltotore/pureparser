@@ -1,3 +1,3 @@
-import {TyrianApp} from './out/web/fastLinkJS.dest/main.js';
+import {TyrianApp} from './out/web/fullLinkJS.dest/main.js';
 
 TyrianApp.launch("myapp");
