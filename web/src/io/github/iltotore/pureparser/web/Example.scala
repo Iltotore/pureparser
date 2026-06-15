@@ -18,14 +18,14 @@ object Example:
   given ToTree[Statement] = ToTree.derived
   given ToTree[Json] = ToTree.derived
   
-  val defaultSample: String = loadCompileTime("../../../examples/sample.json")
+  val defaultSample: String = loadCompileTime("sample.json")
 
   val defaultSelection: Example = Example(
     name = "JSON",
     parserFunction = () => ToTree("Root", json.jsonParser),
     samples = Map(
       "Valid" -> defaultSample,
-      "Partially invalid" -> loadCompileTime("../../../examples/sample_broken.json"),
+      "Partially invalid" -> loadCompileTime("sample_broken.json"),
     )
   )
 
@@ -35,16 +35,16 @@ object Example:
       name = "Math Formula",
       parserFunction = () => ToTree("Root", formula.exprParser),
       samples = Map(
-        "Valid" -> loadCompileTime("../../../examples/sample.formula"),
-        "Partially invalid" -> loadCompileTime("../../../examples/sample_broken.formula")
+        "Valid" -> loadCompileTime("sample.formula"),
+        "Partially invalid" -> loadCompileTime("sample_broken.formula")
       )
     ),
     Example(
       name = "Indentation",
       parserFunction = () => ToTree("Root", indent.statementsParser),
       samples = Map(
-        "Valid" -> loadCompileTime("../../../examples/sample.indentation"),
-        "Partially invalid" -> loadCompileTime("../../../examples/sample_broken.indentation")
+        "Valid" -> loadCompileTime("sample.indentation"),
+        "Partially invalid" -> loadCompileTime("sample_broken.indentation")
       )
     ),
   )

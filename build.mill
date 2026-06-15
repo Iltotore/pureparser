@@ -65,7 +65,7 @@ object `package` extends ScalaModule, ScalafmtModule:
 
     def tailwindVersion = "4.3.0"
 
-    def scalacOptions = self.scalacOptions
+    def scalacOptions = self.scalacOptions() :+ s"-Dexamples.dir=${examples.moduleDir}"
 
     val exampleSources: Seq[Task[Seq[PathRef]]] = examples.moduleDirectChildren.collect:
       case example: ExampleModule => example.sources
@@ -80,3 +80,5 @@ object `package` extends ScalaModule, ScalafmtModule:
     )
 
     def moduleKind = Task(mill.scalajslib.api.ModuleKind.ESModule)
+
+    def javacOptions = super.javacOptions() :+ s"-J-Dexamples.dir=${examples.moduleDir}"
