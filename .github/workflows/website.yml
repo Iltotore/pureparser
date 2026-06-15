@@ -50,6 +50,7 @@ jobs:
           cp out/web/fullLinkJS.dest/main.js docs/examples/out/web/fullLinkJS.dest/
           cp out/web/fullLinkJS.dest/main.js.map docs/examples/out/web/fullLinkJS.dest/
           cp out/web/tailwindCSSOutput.dest/public/output.css docs/examples/out/web/tailwindCSSOutput.dest/public/
+          cp -r out/docJar.dest/docs/ docs/
           cp index.html docs/examples/
           cp tyrianApp.js docs/examples/
 
