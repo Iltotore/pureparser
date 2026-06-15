@@ -1,7 +1,6 @@
 package io.github.iltotore.pureparser.example.indent
 
 import io.github.iltotore.pureparser.*
-import io.github.iltotore.pureparser.util.ByName
 import purelogic.*
 import scala.annotation.tailrec
 import scala.io.Source
