@@ -4,6 +4,7 @@
 
 import mill.*, scalalib.*, scalajslib.*, scalafmt.*
 import io.github.iltotore.tailwind.TailwindModule
+import mill.api.BuildCtx
 
 object `package` extends ScalaModule, ScalafmtModule:
   self =>
@@ -35,7 +36,7 @@ object `package` extends ScalaModule, ScalafmtModule:
     Seq(
       "-project", "PureParser",
       "-revision", "main",
-      "-source-links:github://Iltotore/pureparser",
+      s"-source-links:${BuildCtx.workspaceRoot}=github://Iltotore/pureparser",
       s"-social-links:github::https://github.com/Iltotore/pureparser",
       s"-external-mappings:$externalMappingsFlag"
     )
