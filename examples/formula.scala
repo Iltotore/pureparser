@@ -49,7 +49,7 @@ val binaryMulOps: Map[Char, (Expr, Expr, Span) => Expr] = Map(
 
 val allOperators = binaryAddOps.keySet ++ binaryMulOps.keySet
 
-def binaryOpsParser(operandParser: Parser[Char, Expr], operators: Map[Char, (Expr, Expr, Span) => Expr], isMostPrecedence: Boolean): Parser[Char, Expr] =
+def binaryOpsParser(operandParser: Parser[Char, Expr], operators: Map[Char, (Expr, Expr, Span) => Expr]): Parser[Char, Expr] =
   Parser.separatedByReduce(
     operandParser,
     locally:
@@ -61,8 +61,8 @@ def binaryOpsParser(operandParser: Parser[Char, Expr], operators: Map[Char, (Exp
       (left, right) => operator(left, right, left.span.merge(right.span))
   )
 
-val binaryMulParser: Parser[Char, Expr] = binaryOpsParser(termParser, binaryMulOps, true)
-val binaryAddParser: Parser[Char, Expr] = binaryOpsParser(binaryMulParser, binaryAddOps, false)
+val binaryMulParser: Parser[Char, Expr] = binaryOpsParser(termParser, binaryMulOps)
+val binaryAddParser: Parser[Char, Expr] = binaryOpsParser(binaryMulParser, binaryAddOps)
 
 val exprParser: Parser[Char, Expr] = Parser.recoverWith(
   Parser.expect(Parser.spaced(binaryAddParser), "Valid expression"),
