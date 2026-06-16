@@ -69,5 +69,5 @@ PureParser support Scala JVM and JS.
 
 ## Useful links
 
-- [Website](https://iltotore.github.io/pureparser/docs/)
-- [Scaladoc](https://iltotore.github.io/pureparser/)
+- [Website](https://iltotore.github.io/pureparser/docs/index.html)
+- [Scaladoc](https://iltotore.github.io/pureparser/index.html)

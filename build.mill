@@ -5,6 +5,7 @@
 import mill.*, scalalib.*, scalajslib.*, scalafmt.*
 import io.github.iltotore.tailwind.TailwindModule
 import mill.api.BuildCtx
+import mill.util.VcsVersion
 
 object `package` extends ScalaModule, ScalafmtModule:
   self =>
@@ -22,6 +23,35 @@ object `package` extends ScalaModule, ScalafmtModule:
     "-language:strictEquality"
   )
 
+  def gitTags: Task[Array[String]] = Task(
+    os
+      .proc("git", "tag", "-l", "v*.*.*")
+      .call(VcsVersion.vcsBasePath)
+      .out
+      .trim()
+      .split("\n")
+      .reverse
+  )
+
+  def docVersions: Task[PathRef] = Task:
+    val targetDir = Task.dest / "_assets"
+
+    val versions =
+      gitTags()
+        .filterNot(v => v.contains("-RC") || v.isBlank)
+        .map(_.substring(1))
+
+    val links = versions.map(v => (v, ujson.Str(s"https://www.javadoc.io/doc/io.github.iltotore/pureparser_3/$v/docs/index.html")))
+    val withNightly = links :+ ("Nightly", ujson.Str("https://iltotore.github.io/pureparser/docs/index.html"))
+    val json = ujson.Obj("versions" -> ujson.Obj.from(withNightly))
+
+    val versionsFile = targetDir / "versions.json"
+    os.write.over(versionsFile, ujson.write(json), createFolders = true)
+
+    PathRef(Task.dest)
+
+  def docResources = super.docResources() :+ docVersions()
+
   def externalMappings = Seq(
     ".*purelogic.*" -> ("scaladoc3", "https://javadoc.io/doc/com.github.ghostdogpr/purelogic_3/latest/")
   )
@@ -35,6 +65,7 @@ object `package` extends ScalaModule, ScalafmtModule:
 
     Seq(
       "-project", "PureParser",
+      "-versions-dictionary-url", "https://iltotore.github.io/pureparser/versions.json",
       "-revision", "main",
       s"-source-links:${BuildCtx.workspaceRoot}=github://Iltotore/pureparser",
       s"-social-links:github::https://github.com/Iltotore/pureparser",
