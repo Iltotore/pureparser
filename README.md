@@ -1,6 +1,6 @@
 # PureParser
 
-A parser combinator library built on [PureLogic](https://ghostdogpr.github.io/purelogic/) in Scala 3, featuring :
+A parser combinators library built on [PureLogic](https://ghostdogpr.github.io/purelogic/) in Scala 3, featuring :
 
 - Usual benefits of parser combinators (ease of use, reusability...)
 - Accumulation of all relevant errors unlike short-circuiting behaviors like `Either`
@@ -69,4 +69,5 @@ PureParser support Scala JVM and JS.
 
 ## Useful links
 
+- [Website](https://iltotore.github.io/pureparser/docs/)
 - [Scaladoc](https://iltotore.github.io/pureparser/)
