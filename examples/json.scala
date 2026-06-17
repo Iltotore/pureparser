@@ -41,12 +41,14 @@ val arrayParser: Parser[Char, Json] = Json.JArray.apply.tupled(
   Parser.span(
     Parser.inOrder(
       Parser.literal('['),
-      Parser.separatedByUntil(
+      Parser.separatedBy(
         jsonParser,
-        Parser.spaced(Parser.literal(',')),
-        Parser.literal(']')
+        Parser.spaced(Parser.literal(','))
       ),
-      Parser.literal(']')
+      Parser.recoverWith(
+        Parser.expect(Parser.literal(']'), "]"),
+        RecoverStrategy.viaParser(Parser.eof)
+      )
     )
   )
 )
@@ -63,12 +65,14 @@ val objectParser: Parser[Char, Json] = Json.JObject.apply.tupled(
   Parser.span(
     Parser.inOrder(
       Parser.literal('{'),
-      Parser.separatedByUntil(
+      Parser.separatedBy(
         fieldParser,
-        Parser.spaced(Parser.literal(',')),
-        Parser.literal('}')
+        Parser.spaced(Parser.literal(','))
       ).toMap,
-      Parser.literal('}')
+      Parser.recoverWith(
+        Parser.expect(Parser.literal('}'), "}"),
+        RecoverStrategy.viaParser(Parser.eof)
+      )
     )
   )
 )
