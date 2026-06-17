@@ -2,18 +2,33 @@
 //| mvnDeps:
 //| - "io.github.iltotore::mill-tailwind::0.1.1"
 
-import mill.*, scalalib.*, scalajslib.*, scalafmt.*
+import mill.*, scalalib.*, scalajslib.*, scalafmt.*, publish.*
 import io.github.iltotore.tailwind.TailwindModule
 import mill.api.BuildCtx
 import mill.util.VcsVersion
 
-object `package` extends ScalaModule, ScalafmtModule:
+object `package` extends ScalaModule, ScalafmtModule, PublishModule:
   self =>
 
   def scalaVersion = "3.3.7"
 
   def mvnDeps = Seq(
     mvn"com.github.ghostdogpr::purelogic::0.2.3"
+  )
+
+  def publishVersion = VcsVersion.vcsState().format(untaggedSuffix = "-SNAPSHOT")
+
+  def artifactName = "pureparser"
+
+  def pomSettings = PomSettings(
+    description = "Parser combinators for PureLogic with error accumulation and AST recovery",
+    organization = "io.github.iltotore",
+    url = "https://github.com/Iltotore/pureparser",
+    licenses = Seq(License.`Apache-2.0`),
+    versionControl = VersionControl.github("Iltotore", "pureparser"),
+    developers = Seq(
+      Developer("Iltotore", "Raphaël FROMENTIN", "https://github.com/Iltotore")
+    )
   )
 
   def scalacOptions = Seq(
