@@ -3,11 +3,12 @@
 //| - "io.github.iltotore::mill-tailwind::0.1.1"
 
 import mill.*, scalalib.*, scalajslib.*, scalafmt.*, publish.*
+import mill.util.VcsVersionModule
 import io.github.iltotore.tailwind.TailwindModule
 import mill.api.BuildCtx
 import mill.util.VcsVersion
 
-object `package` extends ScalaModule, ScalafmtModule, PublishModule:
+object `package` extends ScalaModule, ScalafmtModule, PublishModule, VcsVersionModule:
   self =>
 
   def scalaVersion = "3.3.7"
@@ -15,8 +16,6 @@ object `package` extends ScalaModule, ScalafmtModule, PublishModule:
   def mvnDeps = Seq(
     mvn"com.github.ghostdogpr::purelogic::0.2.3"
   )
-
-  def publishVersion = VcsVersion.vcsState().format(untaggedSuffix = "-SNAPSHOT")
 
   def artifactName = "pureparser"
 
