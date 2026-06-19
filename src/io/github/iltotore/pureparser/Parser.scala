@@ -12,14 +12,14 @@ import scala.compiletime.erasedValue
   * 
   * It is a combination of the following effects:
   * - [[purelogic.State]] of [[Int]] representing the index of the next token to read.
-  * - [[purelogic.Reader]] of a [[List]] of tokens `I`.
+  * - [[purelogic.Reader]] of a [[IndexedSeq]] of tokens `I`.
   * - [[purelogic.Writer]] of [[ParseError]].
   * - [[purelogic.Abort]] of [[Unit]], used to cut a path.
   * 
   * @tparam I the type of a token.
   * @tparam A the output type.
   */
-type Parser[-I, +A] = (State[Int], Reader[List[I]], Writer[ParseError], Abort[Unit]) ?=> A
+type Parser[-I, +A] = (State[Int], Reader[IndexedSeq[I]], Writer[ParseError], Abort[Unit]) ?=> A
 
 object Parser:
 
@@ -32,7 +32,7 @@ object Parser:
     * @param parser the [[Parser]] to run.
     * @return the result of the parsing process on the given input.
     */
-  def apply[I, A](input: List[I])(parser: Parser[I, A]): ParseResult[A] =
+  def apply[I, A](input: IndexedSeq[I])(parser: Parser[I, A]): ParseResult[A] =
     val (errors, output) = Logic.run(state = 0, reader = input)(parser)
     val outputOpt = output.toOption
     ParseResult(outputOpt.map(_._2), errors, outputOpt.fold(0)(_._1))
@@ -46,7 +46,7 @@ object Parser:
     * @return the result of the parsing process on the given input.
     */
   def apply[A](input: String)(parser: Parser[Char, A]): ParseResult[A] =
-    apply(input.toList)(parser)
+    apply(input.toIndexedSeq)(parser)
 
   /**
     * Abort/Cut this branch.
@@ -100,7 +100,7 @@ object Parser:
     * 
     * @tparam I the type of a token.
     */
-  def remaining[I]: Parser[I, List[I]] = read.drop(get)
+  def remaining[I]: Parser[I, IndexedSeq[I]] = read.drop(get)
 
   /**
     * Succeed only if there is no token left to read.
