@@ -1,19 +1,14 @@
 package io.github.iltotore.pureparser
 
-/**
-  * A parsing error.
-  */
-enum ParseError derives CanEqual:
+case class ParseError[+I](expected: ParseError.Pattern[I], at: Int) derives CanEqual
 
-  /**
-    * Unexpected end of file.
-    */
-  case EOF
+object ParseError:
 
-  /**
-    * Unexpected token.
-    *
-    * @param expected the expected token(s) or pattern(s).
-    * @param at where the unexpected token was encountered. If the tokens carry their [[Span]], you can use the one of the token at [[at]].
-    */
-  case UnexpectedToken(expected: String, at: Int)
+  enum Pattern[+I] derives CanEqual:
+    case Token(token: I)
+    case Label(label: String)
+    case SomethingElse
+    case EOF
+
+  def apply[I](token: I, at: Int): ParseError[I] = ParseError(Pattern.Token(token), at)
+  def apply[I](label: String, at: Int): ParseError[I] = ParseError(Pattern.Label(label), at)

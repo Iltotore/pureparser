@@ -34,13 +34,13 @@ val indentationParser: Parser[Char, Int] = Parser.inOrder(
 def blockParser(indentation: Int): Parser[Char, List[Statement]] =
   val startIndentation = indentationParser
   if startIndentation <= indentation then
-    write(ParseError.UnexpectedToken(s"Greater indentation than $indentation. Currently: $startIndentation", get))
+    write(ParseError(s"Greater indentation than $indentation. Currently: $startIndentation", get))
     Nil
   else
     val sameIndentationParser: Parser[Char, Unit] =
       val lineIdentation = indentationParser
       if lineIdentation != startIndentation then
-        Parser.errorAndAbort(ParseError.UnexpectedToken(s"Same indentation than $startIndentation. Currently: $lineIdentation", get))
+        Parser.errorAndAbort(ParseError(s"Same indentation than $startIndentation. Currently: $lineIdentation", get))
       
     Parser.separatedBy(statementParser(startIndentation), sameIndentationParser)
 

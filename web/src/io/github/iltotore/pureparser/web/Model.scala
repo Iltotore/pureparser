@@ -2,7 +2,7 @@ package io.github.iltotore.pureparser.web
 
 import io.github.iltotore.pureparser.ParseResult
 
-case class Model(examples: List[Example], selectedExample: Example, input: String, result: ParseResult[Tree])
+case class Model(examples: List[Example], selectedExample: Example, input: String, result: ParseResult[Char, Tree])
 
 object Model:
 

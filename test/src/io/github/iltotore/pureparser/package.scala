@@ -6,6 +6,6 @@ def assertSuccess[A](parser: Parser[Char, A], input: String)(expectedResult: A, 
   val result = Parser(input)(parser)
   assert(result.output.exists(_ == expectedResult), result.endPosition == expectedPosition)
 
-def assertErrors(parser: Parser[Char, Any], input: String)(matchError: PartialFunction[Seq[ParseError], Unit]): Unit =
+def assertErrors(parser: Parser[Char, Any], input: String)(matchError: PartialFunction[Seq[ParseError[Char]], Unit]): Unit =
   val result = Parser(input)(parser)
   assertMatch(result.errors)(matchError.asInstanceOf[PartialFunction[Any, Unit]])

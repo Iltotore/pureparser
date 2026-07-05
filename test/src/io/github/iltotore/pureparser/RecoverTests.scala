@@ -36,7 +36,7 @@ object RecoverTests extends TestSuite:
 
       test("success") - assertSuccess(parser, "[true,vrai]")(List(Value.VBool(true), Value.VBool(true)))
       test("invalid") - assertErrors(parser, "[true,faux]"):
-        case Seq(ParseError.UnexpectedToken(_, 6)) =>
+        case Seq(ParseError(ParseError.Pattern.Label("Boolean"), 6)) =>
 
     test("skipUntil"):
       val parser: Parser[Char, List[Value]] = arrayParser(
@@ -55,9 +55,9 @@ object RecoverTests extends TestSuite:
       test("invalidPrefixBeforeSeparator") - assertSuccess(parser, "[true,invalidtrue,false]")(List(Value.VBool(true), Value.VBool(true), Value.VBool(false)))
       test("invalidPrefixBeforeEnd") - assertSuccess(parser, "[true,true,invalidfalse]")(List(Value.VBool(true), Value.VBool(true), Value.VBool(false)))
       test("invalidSuffix") - assertErrors(parser, "[true,trueinvalid,false]"):
-        case Seq(ParseError.UnexpectedToken(_, 10)) =>
+        case Seq(ParseError(ParseError.Pattern.Token(','), 10)) =>
       test("entirelyInvalid") - assertErrors(parser, "[true,invalid,false]"):
-        case Seq(ParseError.UnexpectedToken(_, 6)) =>
+        case Seq(ParseError(ParseError.Pattern.Label("Boolean"), 6)) =>
 
     test("nestedDelimiters"):
       lazy val parser: Parser[Char, List[Value]] = arrayParser(

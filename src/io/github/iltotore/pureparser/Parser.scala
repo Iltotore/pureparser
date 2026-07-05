@@ -19,7 +19,7 @@ import scala.compiletime.erasedValue
   * @tparam I the type of a token.
   * @tparam A the output type.
   */
-type Parser[-I, +A] = (State[Int], Reader[IndexedSeq[I]], Writer[ParseError], Abort[Unit]) ?=> A
+type Parser[I, +A] = (State[Int], Reader[IndexedSeq[I]], Writer[ParseError[I]], Abort[Unit]) ?=> A
 
 object Parser:
 
@@ -32,7 +32,7 @@ object Parser:
     * @param parser the [[Parser]] to run.
     * @return the result of the parsing process on the given input.
     */
-  def apply[I, A](input: IndexedSeq[I])(parser: Parser[I, A]): ParseResult[A] =
+  def apply[I, A](input: IndexedSeq[I])(parser: Parser[I, A]): ParseResult[I, A] =
     val (errors, output) = Logic.run(state = 0, reader = input)(parser)
     val outputOpt = output.toOption
     ParseResult(outputOpt.map(_._2), errors, outputOpt.fold(0)(_._1))
@@ -45,27 +45,27 @@ object Parser:
     * @param parser the [[Parser]] to run.
     * @return the result of the parsing process on the given input.
     */
-  def apply[A](input: String)(parser: Parser[Char, A]): ParseResult[A] =
+  def apply[A](input: String)(parser: Parser[Char, A]): ParseResult[Char, A] =
     apply(input.toIndexedSeq)(parser)
 
   /**
     * Abort/Cut this branch.
     */
-  def abort: Parser[Any, Nothing] = fail(())
+  def abort[I]: Parser[I, Nothing] = fail(())
 
   /**
     * Emit an error then [[abort]].
     *
     * @param error the error to emit.
     */
-  def errorAndAbort(error: ParseError): Parser[Any, Nothing] =
+  def errorAndAbort[I](error: ParseError[I]): Parser[I, Nothing] =
     write(error)
     abort
 
   /**
     * Check if there is no more token to parse.
     */
-  def isEOF: Parser[Any, Boolean] = read.sizeCompare(get) <= 0
+  def isEOF[I]: Parser[I, Boolean] = read.sizeCompare(get) <= 0
 
   /**
     * Get the next character to parse without updating advancing.
@@ -76,14 +76,14 @@ object Parser:
     val input = read
     val next = get
     if next < input.size then input(next)
-    else errorAndAbort(ParseError.EOF)
+    else errorAndAbort(ParseError(ParseError.Pattern.SomethingElse, next))
 
   /**
     * Advance the cursor in the token list.
     *
     * @param n the number of tokens to skip.
     */
-  def advance(n: Int): Parser[Any, Unit] = update(_ + n)
+  def advance[I](n: Int): Parser[I, Unit] = update(_ + n)
 
   /**
     * Read the next token. Like [[peek]] then [[advance]] of 1.
@@ -109,7 +109,7 @@ object Parser:
     */
   def eof[I]: Parser[I, Unit] =
     if Parser.isEOF then ()
-    else errorAndAbort(ParseError.UnexpectedToken("End of file", get))
+    else errorAndAbort(ParseError(ParseError.Pattern.EOF, get))
 
   /**
     * Debug the given [[Parser]] by printing info before and after parsing.
@@ -152,8 +152,8 @@ object Parser:
     */
   def literal[I](value: I)(using CanEqual[I, I]): Parser[I, Unit] =
     val start = get
-    if next == value then ()
-    else errorAndAbort(ParseError.UnexpectedToken(value.toString, start))
+    if Parser.orError(next, ParseError(value, start)) == value then ()
+    else errorAndAbort(ParseError(value, start))
 
   /**
     * Parse a specific [[String]].
@@ -165,7 +165,7 @@ object Parser:
     val start = get
 
     while i < value.size do
-      if next != value(i) then errorAndAbort(ParseError.UnexpectedToken(value, start))
+      if next != value(i) then errorAndAbort(ParseError(value, start))
       i += 1
 
   /**
@@ -178,7 +178,7 @@ object Parser:
     val start = get
     val result = next
     if values.contains(result) then result
-    else errorAndAbort(ParseError.UnexpectedToken(values.mkString("One of: ", ", ", ""), start))
+    else errorAndAbort(ParseError(values.mkString("One of: ", ", ", ""), start))
 
   /**
     * Parse one of the expected tokens.
@@ -190,7 +190,7 @@ object Parser:
     val start = get
     val result = next
     if values.contains(result) then result
-    else errorAndAbort(ParseError.UnexpectedToken(values.mkString("One of: ", ", ", ""), start))
+    else errorAndAbort(ParseError(values.mkString("One of: ", ", ", ""), start))
 
   /**
     * Parse one of the expected [[Char]].
@@ -210,7 +210,7 @@ object Parser:
       case Some(value) =>
         advance(value.length)
         value
-      case None => errorAndAbort(ParseError.UnexpectedToken(s"Text matching regex $pattern", get))
+      case None => errorAndAbort(ParseError(s"Text matching regex $pattern", get))
     
   /**
     * Parse a [[String]] matching the given [[scala.util.matching.Regex]].
@@ -236,7 +236,7 @@ object Parser:
   def whitespace: Parser[Char, Unit] =
     val start = get
     if next.isWhitespace then ()
-    else Parser.errorAndAbort(ParseError.UnexpectedToken("Whitespace", start))
+    else Parser.errorAndAbort(ParseError("Whitespace", start))
 
   /**
     * Parse a whitespace character. Does not parse newlines.
@@ -337,7 +337,7 @@ object Parser:
     * @param parser the wrapped [[Parser]].
     * @param error the [[ParseError]] to emit in case of failure.
     */
-  def orError[I, A](parser: Parser[I, A], error: ParseError): Parser[I, A] =
+  def orError[I, A](parser: Parser[I, A], error: ParseError[I]): Parser[I, A] =
     recover(parser)(_ => Parser.errorAndAbort(error))
 
   /**
@@ -351,7 +351,7 @@ object Parser:
     */
   def expect[I, A](parser: Parser[I, A], expected: String): Parser[I, A] =
     val start = get
-    Parser.orError(parser, ParseError.UnexpectedToken(expected, start))
+    Parser.orError(parser, ParseError(expected, start))
 
   /**
     * Ensure the given [[Parser]] fails.
@@ -362,7 +362,7 @@ object Parser:
     */
   def not[I, A](parser: Parser[I, A]): Parser[I, Unit] =
     if Parser.isSuccessful(parser) then
-      Parser.errorAndAbort(ParseError.UnexpectedToken("Input not validating this parser", get))
+      Parser.errorAndAbort(ParseError(ParseError.Pattern.SomethingElse, get))
     else ()
 
   /**
@@ -375,7 +375,7 @@ object Parser:
     */
   def andCheck[I, A](parser: Parser[I, A], check: Parser[I, Unit]): Parser[I, A] =
     if Parser.isSuccessful(check) then parser
-    else Parser.errorAndAbort(ParseError.UnexpectedToken("Something else", get))
+    else Parser.errorAndAbort(ParseError(ParseError.Pattern.SomethingElse, get))
 
   /**
     * In case of failure, recover the given [[Parser]] using the given [[package.RecoverStrategy]].
@@ -398,7 +398,7 @@ object Parser:
   @tailrec
   def skipUntil[I](until: Parser[I, Any]): Parser[I, Unit] =
     if Parser.isSuccessful(until) then ()
-    else if Parser.isEOF then errorAndAbort(ParseError.EOF)
+    else if Parser.isEOF then errorAndAbort(ParseError(ParseError.Pattern.SomethingElse, get))
     else
       advance(1)
       skipUntil(until)

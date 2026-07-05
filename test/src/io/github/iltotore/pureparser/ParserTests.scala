@@ -24,12 +24,12 @@ object ParserTests extends TestSuite:
         assertSuccess(parser, "ab")('b')
 
       test("eof") - assertErrors(Parser.next, ""):
-        case Seq(ParseError.EOF) =>
+        case Seq(ParseError(ParseError.Pattern.SomethingElse, 0)) =>
 
     test("eof"):
       test("empty") - assertSuccess(Parser.eof, "")(())
       test("hasRemaining") - assertErrors(Parser.eof, "a"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.EOF, 0)) =>
 
     test("span"):
       test("empty") - assertSuccess(Parser.span(Parser.eof), "")(Span(0, 0))
@@ -39,11 +39,11 @@ object ParserTests extends TestSuite:
       test("token") - assertSuccess(Parser.literal('a'), "a")(())
       test("string") - assertSuccess(Parser.literal("abc"), "abc")(())
       test("unexpectedToken") - assertErrors(Parser.literal('a'), "b"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Token('a'), 0)) =>
       test("unexpectedString") - assertErrors(Parser.literal("abc"), "abd"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Label("abc"), 0)) =>
       test("eof") - assertErrors(Parser.literal('a'), ""):
-        case Seq(ParseError.EOF) =>
+        case Seq(ParseError(ParseError.Pattern.Token('a'), 0)) =>
 
     test("oneOf"):
       val parserSeq: Parser[Char, Char] = Parser.oneOf('a', 'b')
@@ -58,14 +58,14 @@ object ParserTests extends TestSuite:
         assertSuccess(parserString, "b")('b')
 
       test("none") - assertErrors(parserSeq, "c"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Label(_), 0)) =>
 
     test("regex"):
       val parser: Parser[Char, String] = Parser.regex("[0-9]+")
       test("full") - assertSuccess(parser, "1234")("1234")
       test("part") - assertSuccess(parser, "1234abcd")("1234", 4)
       test("unexpected") - assertErrors(parser, "abcd1234"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Label(_), 0)) =>
 
     test("spaced"):
       val parser: Parser[Char, Unit] = Parser.spaced(Parser.literal('a'))
@@ -80,7 +80,7 @@ object ParserTests extends TestSuite:
 
       test("success") - assertSuccess(parser, "true")(true)
       test("unexpected") - assertErrors(parser, "false"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Label("true"), 0)) =>
 
     test("firstOf"):
       val parser: Parser[Char, Boolean] = Parser.firstOf(
@@ -102,11 +102,11 @@ object ParserTests extends TestSuite:
 
       test("success") - assertSuccess(parser, "(true)")(true)
       test("missingParenthesisOpen") - assertErrors(parser, "true)"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Token('('), 0)) =>
       test("missingParenthesisClose") - assertErrors(parser, "(true"):
-        case Seq(ParseError.EOF) =>
+        case Seq(ParseError(ParseError.Pattern.Token(')'), 5)) =>
       test("missingTrue") - assertErrors(parser, "()"):
-        case Seq(ParseError.UnexpectedToken(_, 1)) =>
+        case Seq(ParseError(ParseError.Pattern.Label("true"), 1)) =>
 
     test("isSuccessful"):
       val parser: Parser[Char, Boolean] = Parser.isSuccessful(Parser.literal('a'))
@@ -117,14 +117,12 @@ object ParserTests extends TestSuite:
         test("eof") - assertSuccess(parser, "")(false, 0)
 
     test("orError"):
-      val parser: Parser[Char, Unit] = Parser.orError(Parser.literal('a'), ParseError.UnexpectedToken("The letter a", 0))
+      val parser: Parser[Char, Unit] = Parser.expect(Parser.literal('a'), "The letter a")
 
       test("success") - assertSuccess(parser, "a")(())
       test("failure"):
         test("unexpected") - assertErrors(parser, "b"):
-          case Seq(ParseError.UnexpectedToken("The letter a", 0)) =>
-        test("eof") - assertErrors(parser, ""):
-          case Seq(ParseError.UnexpectedToken("The letter a", 0)) =>
+          case Seq(ParseError(ParseError.Pattern.Label("The letter a"), 0)) =>
 
     test("not"):
       val parser: Parser[Char, Unit] = Parser.not(Parser.literal('a'))
@@ -133,7 +131,7 @@ object ParserTests extends TestSuite:
         test("notA") - assertSuccess(parser, "b")((), 0)
         test("eof") - assertSuccess(parser, "")((), 0)
       test("a") - assertErrors(parser, "a"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.SomethingElse, 0)) =>
 
     test("andCheck"):
       val parser: Parser[Char, Char] = Parser.andCheck(
@@ -143,7 +141,7 @@ object ParserTests extends TestSuite:
 
       test("success") - assertSuccess(parser, "abc")('a', 1)
       test("failure") - assertErrors(parser, "a"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.SomethingElse, 0)) =>
 
     test("skipUntil"):
       val parser: Parser[Char, Unit] = Parser.skipUntil(Parser.literal('b'))
@@ -151,7 +149,7 @@ object ParserTests extends TestSuite:
       test("success") - assertSuccess(parser, "aaab")((), 3)
       test("onlyUntil") - assertSuccess(parser, "b")((), 0)
       test("eof") - assertErrors(parser, "aaa"):
-        case Seq(ParseError.EOF) =>
+        case Seq(ParseError(ParseError.Pattern.SomethingElse, 3)) =>
       test("untilEOF") - assertSuccess(Parser.skipUntil(Parser.eof), "aaa")(())
 
     test("repeatUntil"):
@@ -159,11 +157,11 @@ object ParserTests extends TestSuite:
 
       test("success") - assertSuccess(parser, "abaaEND")(List('a', 'b', 'a', 'a'), 4)
       test("onlyUntil") - assertErrors(parser, "END"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Label(_), 0)) =>
       test("unexpectedElement") - assertErrors(parser, "abacEND"):
-        case Seq(ParseError.UnexpectedToken(_, 3)) =>
+        case Seq(ParseError(ParseError.Pattern.Label(_), 3)) =>
       test("noUntil") - assertErrors(parser, "abaa"):
-        case Seq(ParseError.EOF) =>
+        case Seq(ParseError(ParseError.Pattern.SomethingElse, 4)) =>
 
     test("repeatUntil0"):
       val parser: Parser[Char, List[Char]] = Parser.repeatUntil0(Parser.oneOf("ab"), Parser.literal("END"))
@@ -171,9 +169,9 @@ object ParserTests extends TestSuite:
       test("success") - assertSuccess(parser, "abaaEND")(List('a', 'b', 'a', 'a'), 4)
       test("onlyUntil") - assertSuccess(parser, "END")(Nil, 0)
       test("unexpectedElement") - assertErrors(parser, "abacEND"):
-        case Seq(ParseError.UnexpectedToken(_, 3)) =>
+        case Seq(ParseError(ParseError.Pattern.Label(_), 3)) =>
       test("noUntil") - assertErrors(parser, "abaa"):
-        case Seq(ParseError.EOF) =>
+        case Seq(ParseError(ParseError.Pattern.SomethingElse, 4)) =>
 
     test("repeatDiscard0"):
       val parser: Parser[Char, Unit] = Parser.repeatDiscard0(Parser.literal("ab"))
@@ -196,9 +194,9 @@ object ParserTests extends TestSuite:
       test("multiple") - assertSuccess(parser, "a,bEND")(List('a', 'b'), 3)
       test("onlyUntil") - assertSuccess(parser, "END")(Nil, 0)
       test("unexpectedElement") - assertErrors(parser, "a,cEND"):
-        case Seq(ParseError.UnexpectedToken(_, 2)) =>
+        case Seq(ParseError(ParseError.Pattern.Label(_), 2)) =>
       test("noUntil") - assertErrors(parser, "a,b"):
-        case Seq(ParseError.EOF) =>
+        case Seq(ParseError(ParseError.Pattern.Token(','), 3)) =>
 
     test("separatedByUntil"):
       val parser: Parser[Char, List[Char]] = Parser.separatedBy(
@@ -212,11 +210,13 @@ object ParserTests extends TestSuite:
       test("untilError") - assertSuccess(parser, "a,b,a]")(List('a', 'b', 'a'), 5)
 
     test("separatedByReduce"):
-      val intParser: Parser[Char, Int] =
+      val intParser: Parser[Char, Int] = Parser.expect(
         Parser
           .regex("[0-9]+")
           .toIntOption
-          .getOrElse(Parser.abort)
+          .getOrElse(Parser.abort),
+        "int"
+      )
 
       val operatorParser: Parser[Char, (Int, Int) => Int] = Parser.firstOf(
         Parser.as(Parser.literal('+'), _ + _),
@@ -229,6 +229,6 @@ object ParserTests extends TestSuite:
       test("multiple") - assertSuccess(parser, "1+2+3+4+5")(15)
       test("untilError") - assertSuccess(parser, "1+2+3+4+5/2")(15, 9)
       test("noElement") - assertErrors(parser, ""):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Label("int"), 0)) =>
       test("firstInvalid") - assertErrors(parser, "a"):
-        case Seq(ParseError.UnexpectedToken(_, 0)) =>
+        case Seq(ParseError(ParseError.Pattern.Label("int"), 0)) =>
