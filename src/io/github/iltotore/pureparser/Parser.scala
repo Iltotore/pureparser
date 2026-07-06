@@ -19,7 +19,7 @@ import scala.compiletime.erasedValue
   * @tparam I the type of a token.
   * @tparam A the output type.
   */
-type Parser[I, +A] = (State[Int], Reader[IndexedSeq[I]], Writer[ParseError[I]], Abort[Unit]) ?=> A
+type Parser[I, +A] = (State[Int], Reader[IndexedSeq[I]], Writer[ParseError[I]], Abort[Boolean]) ?=> A
 
 object Parser:
 
@@ -49,18 +49,18 @@ object Parser:
     apply(input.toIndexedSeq)(parser)
 
   /**
-    * Abort/Cut this branch.
+    * Abort this branch and backtrack.
     */
-  def abort[I]: Parser[I, Nothing] = fail(())
+  def backtrack[I]: Parser[I, Nothing] = fail(false)
 
   /**
-    * Emit an error then [[abort]].
+    * Emit an error then [[backtrack]].
     *
     * @param error the error to emit.
     */
-  def errorAndAbort[I](error: ParseError[I]): Parser[I, Nothing] =
+  def errorAndAbort[I](error: ParseError[I], fatal: Boolean = false): Parser[I, Nothing] =
     write(error)
-    abort
+    fail(fatal)
 
   /**
     * Check if there is no more token to parse.
@@ -222,10 +222,13 @@ object Parser:
   /**
     * Parse a newline (CL, RF or CLRF) character.
     */
-  val newline: Parser[Char, Unit] = Parser.firstOf(
-    Parser.literal("\r\n"),
-    Parser.literal('\r'),
-    Parser.literal('\n')
+  val newline: Parser[Char, Unit] = Parser.expect(
+    Parser.firstOf(
+      Parser.literal("\r\n"),
+      Parser.literal('\r'),
+      Parser.literal('\n')
+    ),
+    "New line"
   )
 
   /**
@@ -271,7 +274,7 @@ object Parser:
     * @param value the value to use as output.
     */
   @nowarn("msg=unused")
-  def as[I, A](parser: Parser[I, Any], value: A): Parser[I, A] =
+  def as[I, A](parser: Parser[I, Any], value: => A): Parser[I, A] =
     parser
     value
 
@@ -291,8 +294,9 @@ object Parser:
     * @param parsers the branches to try.
     */
   def firstOfSeq[I, A](parsers: Seq[Parser[I, A]]): Parser[I, A] = parsers match
-    case head +: tail => recover(head)(_ => firstOfSeq(tail))
-    case _ => fail(())
+    case head +: tail => recoverSome(head):
+      case false => firstOfSeq(tail)
+    case _ => Parser.backtrack
 
   /**
     * Successively try each [[Parser]], stopping on the first succeeding one.
@@ -327,7 +331,10 @@ object Parser:
     * @param parser the [[Parser]] to try.
     */
   def isSuccessful[I](parser: Parser[I, Any]): Parser[I, Boolean] =
-    localState(identity)(recover(Writer(Parser.as(parser, true))._2)(_ => false))
+    localState(identity)(
+      recoverSome(Writer(Parser.as(parser, true))._2):
+        case false => false
+    )
 
   /**
     * If the given [[Parser]] fails, still fail but with the given [[ParseError]] instead.
@@ -338,7 +345,8 @@ object Parser:
     * @param error the [[ParseError]] to emit in case of failure.
     */
   def orError[I, A](parser: Parser[I, A], error: ParseError[I]): Parser[I, A] =
-    recover(parser)(_ => Parser.errorAndAbort(error))
+    recoverSome(parser):
+      case false => errorAndAbort(error)
 
   /**
     * If the given [[Parser]] fails, emit a [[ParseError.UnexpectedToken]] with the given label.
@@ -352,6 +360,18 @@ object Parser:
   def expect[I, A](parser: Parser[I, A], expected: String): Parser[I, A] =
     val start = get
     Parser.orError(parser, ParseError(expected, start))
+
+  /**
+    * Commit to this parser. If it fails, the error will bubble through all [[firstOf]]
+    * and similar up to the root or the first [[recoverWith]].
+    * 
+    * This operation is sometimes named `cut` in the literature.
+    *
+    * @tparam I the type of a token.
+    * @tparam A the output type.
+    * @param parser the wrapped [[Parser]].
+    */
+  def commit[I, A](parser: Parser[I, A]): Parser[I, A] = recoverKeepLog(parser)(_ => fail(true))
 
   /**
     * Ensure the given [[Parser]] fails.

@@ -30,7 +30,7 @@ object RecoverStrategy:
   def firstOfSeq[I, A](strategies: Seq[RecoverStrategy[I, A]]): RecoverStrategy[I, A] = new RecoverStrategy:
     override def apply(parser: Parser[I, A]): Parser[I, A] = strategies match
       case head +: tail => recover(head(parser))(_ => firstOfSeq(tail)(parser))
-      case _ => Parser.abort
+      case _ => Parser.backtrack
 
   /**
     * Successively try each [[RecoverStrategy]], stopping on the first succeeding one.
@@ -71,7 +71,7 @@ object RecoverStrategy:
   def skipThenRetryUntil[I, A](until: Parser[I, Any]): RecoverStrategy[I, A] = new RecoverStrategy:
     override def apply(parser: Parser[I, A]): Parser[I, A] =
       def rec: Parser[I, A] =
-        if Parser.isEOF || Parser.isSuccessful(until) then fail(())
+        if Parser.isEOF || Parser.isSuccessful(until) then Parser.backtrack
         else
           Parser.advance(1)
           Parser.firstOf(parser, rec)

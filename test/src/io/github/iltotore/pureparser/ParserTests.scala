@@ -1,8 +1,13 @@
 package io.github.iltotore.pureparser
 
 import utest.*
+import io.github.iltotore.pureparser.ParseError.Pattern
 
 object ParserTests extends TestSuite:
+
+  private enum Expr derives CanEqual:
+    case VarCall(name: String)
+    case Assign(name: String, expr: String)
 
   val tests = Tests:
     test("peek"):
@@ -124,6 +129,27 @@ object ParserTests extends TestSuite:
         test("unexpected") - assertErrors(parser, "b"):
           case Seq(ParseError(ParseError.Pattern.Label("The letter a"), 0)) =>
 
+    test("commit"):
+      val identifier: Parser[Char, String] = Parser.expect(Parser.regex("[a-zA-Z]+"), "identifier")
+      val parser: Parser[Char, Expr] = Parser.expect(
+        Parser.firstOf(
+          Expr.Assign.apply.tupled(Parser.inOrder(identifier, Parser.literal('='), Parser.commit(identifier))),
+          Expr.VarCall(identifier)
+        ),
+        "expr"
+      )
+
+      test("success"):
+        test("varCall") - assertSuccess(parser, "x")(Expr.VarCall("x"))
+        test("assign") - assertSuccess(parser, "x=y")(Expr.Assign("x", "y"))
+
+      test("failure"):
+        test("unexpectedExpr") - assertErrors(parser, "5"):
+          case Seq(ParseError(Pattern.Label("expr"), 0)) =>
+        
+        test("malformedAssign") - assertErrors(parser, "x="):
+          case Seq(ParseError(Pattern.Label("identifier"), 2)) =>
+
     test("not"):
       val parser: Parser[Char, Unit] = Parser.not(Parser.literal('a'))
 
@@ -214,7 +240,7 @@ object ParserTests extends TestSuite:
         Parser
           .regex("[0-9]+")
           .toIntOption
-          .getOrElse(Parser.abort),
+          .getOrElse(Parser.backtrack),
         "int"
       )
 
