@@ -26,7 +26,7 @@ val intParser: Parser[Char, Json] = Json.JInt.apply.tupled(
     val start = get
     Parser.regex("[+-]?[0-9]+")
       .toIntOption
-      .getOrElse(fail(()))
+      .getOrElse(Parser.errorAndAbort(ParseError("Valid int", start), fatal = true))
 )
 
 val rawStringParser: Parser[Char, String] = Parser.inOrder(
@@ -57,7 +57,7 @@ val fieldParser: Parser[Char, (String, Json)] = Parser.spaced(
   Parser.inOrder(
     rawStringParser,
     Parser.spaced(Parser.literal(':')),
-    jsonParser
+    Parser.commit(jsonParser)
   )
 )
 

@@ -15,13 +15,42 @@ enum Expr:
 
   def span: Span
 
-val literalParser: Parser[Char, Expr] = Expr.Literal.apply.tupled(
-  Parser.span(
-    Parser.regex("[0-9]+(.[0-9]+)?")
-      .toDoubleOption
-      .getOrElse(Parser.abort)
+/**
+  * This literal number parser could be a regex but is enhanced here to showcase how one can provide
+  * more precise errors than "expected valid number/expression".
+  * 
+  * Here, this parser can tell:
+  * - if the decimal part after `.` is missing -> recover the decimal part as 0
+  * - if the user entered `,` for the decimal part instead of `.` -> recover the number as if `.` was used
+  * - if the number is invalid for any other reason
+  */
+val literalParser: Parser[Char, Expr] =
+  val (intPart, decimalPart, span) = Parser.span(
+    Parser.inOrder(
+      Parser.regex("[0-9]+"),
+      Parser.recoverWith(
+        Parser.firstOf(
+          Parser.inOrder(
+            Parser.recoverWith(
+              Parser.literal('.'),
+              RecoverStrategy.viaParser(Parser.literal(','))
+            ),
+            Parser.commit(Parser.expect(Parser.regex("[0-9]+"), "Decimal part of number"))
+          ),
+          "0"
+        ),
+        RecoverStrategy.skipUntil(Parser.oneOf(binaryAddOps.keySet ++ binaryMulOps.keySet + ')'), "0")
+      )
+    )
   )
-)
+  
+  Expr.Literal(
+    s"$intPart.$decimalPart"
+      .toDoubleOption
+      .getOrElse(Parser.errorAndAbort(ParseError("Valid number", span.start))),
+    span
+  )
+
 
 val parenthesizedParser: Parser[Char, Expr] = Parser.inOrder(
   Parser.literal('('),
@@ -55,7 +84,7 @@ def binaryOpsParser(operandParser: Parser[Char, Expr], operators: Map[Char, (Exp
     locally:
       val operatorKeys = operators.keySet
       val operator = Parser.recoverWith(
-        operators(Parser.spaced(Parser.oneOf(operatorKeys))),
+        operators(Parser.spaced(Parser.expect(Parser.oneOf(operatorKeys), "Valid binary operator"))),
         RecoverStrategy.skipThenRetryUntil(Parser.oneOf(allOperators -- operatorKeys + ')'))
       )
       (left, right) => operator(left, right, left.span.merge(right.span))
@@ -68,7 +97,7 @@ val exprParser: Parser[Char, Expr] = Parser.recoverWith(
   Parser.expect(Parser.spaced(binaryAddParser), "Valid expression"),
   RecoverStrategy.firstOf(
     RecoverStrategy.nestedDelimiters('(', ')', Expr.Invalid(Span(0, 0))),
-    RecoverStrategy.skipUntil(Parser.firstOf(Parser.oneOf(")"), Parser.eof), Expr.Invalid(Span(0, 0)))
+    RecoverStrategy.skipUntil(Parser.firstOf(Parser.literal(')'), Parser.eof), Expr.Invalid(Span(0, 0)))
   )
 )
 

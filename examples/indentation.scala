@@ -16,19 +16,21 @@ val exprParser: Parser[Char, Statement] = Statement.Expr(Parser.span(Parser.lite
 def loopParser(indentation: Int): Parser[Char, Statement] = Statement.Loop.apply.tupled(
   Parser.span(
     Parser.inOrder(
-      Parser.literal("loop:"),
-      Parser.newline,
-      blockParser(indentation)
+      Parser.literal("loop"),
+      Parser.commit(Parser.inOrder(Parser.literal(':'), Parser.newline, blockParser(indentation)))
     )
   )
 )
 
 val skipInlineWhitespace: Parser[Char, Unit] = Parser.repeatDiscard0(Parser.inlineWhitespace)
 
-val indentationParser: Parser[Char, Int] = Parser.inOrder(
-  Parser.repeatDiscard0(Parser.inOrder(skipInlineWhitespace, Parser.newline)),
-  Parser.span(skipInlineWhitespace).size,
-  Parser.not(Parser.eof)
+val indentationParser: Parser[Char, Int] = Parser.expect(
+  Parser.inOrder(
+    Parser.repeatDiscard0(Parser.inOrder(skipInlineWhitespace, Parser.newline)),
+    Parser.span(skipInlineWhitespace).size,
+    Parser.not(Parser.eof)
+  ),
+  "Indentation, not end of file"
 )
 
 def blockParser(indentation: Int): Parser[Char, List[Statement]] =
