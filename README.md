@@ -65,7 +65,7 @@ mvn"io.github.iltotore::pureparser:version"
 
 Note: replace `version` with the version of PureParser you want to use.
 
-PureParser support Scala JVM and JS.
+PureParser supports Scala JVM and JS.
 
 ## Useful links
 
