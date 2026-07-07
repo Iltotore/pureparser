@@ -146,4 +146,7 @@ object `package` extends ScalaModule, ScalafmtModule, PublishModule, VcsVersionM
 
     def moduleKind = Task(mill.scalajslib.api.ModuleKind.ESModule)
 
-    def javacOptions = super.javacOptions() :+ s"-J-Dexamples.dir=${examples.moduleDir}"
+    def javacOptions = super.javacOptions() ++ Seq(
+      s"-J-Dexamples.dir=${examples.moduleDir}",
+      s"-J-Dexamples.version=${self.publishVersion()}"
+    )

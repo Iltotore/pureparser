@@ -11,7 +11,7 @@ import scala.collection.mutable.ListBuffer
 @JSExportTopLevel("TyrianApp")
 object Main extends TyrianIOApp[Msg, Model]:
 
-  override def router: Location => Msg = _ => Msg.NoOp
+  override def router: Location => Msg = Routing.none(Msg.NoOp)
 
   override def init(flags: Map[String, String]): (Model, Cmd[IO, Msg]) =
     (Model.default, Cmd.emit(Msg.SetInput(Example.defaultSample)))
@@ -61,7 +61,15 @@ object Main extends TyrianIOApp[Msg, Model]:
 
   override def view(model: Model): Html[Msg] = div(cls := "w-screen h-screen flex flex-col")(
     div(cls := "navbar shadow-sm px-10")(
-      div(cls := "navbar-start text-2xl font-bold")("PureParser examples"),
+      div(cls := "navbar-start gap-2")(
+        a(
+          cls := "flex flex-row link gap-2 text-2xl font-bold",
+          href := "https://github.com/Iltotore/pureparser",
+          target := "_blank",
+          attr("onclick") := """window.open("https://github.com/Iltotore/pureparser")"""
+        )(githubIcon, span(s"PureParser examples")),
+        span(compileTimeProperty("examples.version").fold("")("v" + _))
+      ),
       ul(cls := "navbar-end menu menu-horizontal rounded-box")(
         li(cls := "w-3xs border border-gray-300 rounded-lg z-50")(
           details(
