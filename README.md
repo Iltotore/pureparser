@@ -43,7 +43,8 @@ println(Parser("1")(exprParser))
 println(Parser("[1,2]")(exprParser))
 
 // Array(List(Literal(1), Literal(2), Invalid, Literal(4), Invalid, Literal(5)))
-// + two errors "Unexpected token, expected: Valid expression" at position 5 and 13
+// ParseError(expected = Label("Valid expression"), at = 5)
+// ParseError(expected = Label("Valid expression"), at = 3)
 println(Parser("[1,2,hello,4,there,5]")(exprParser))
 ```
 

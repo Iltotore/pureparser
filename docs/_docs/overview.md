@@ -97,23 +97,25 @@ Is understood as:
 
 ```
 expr
-expr
+<invalid expression>
 loop:
   expr
   loop:
-    <invalid expression>
+    yo
     expr
     loop:
 
 expr
+loop:
 ```
 
 with the following errors:
 
 ```scala
-UnexpectedToken(expected = "Statement", at = 5)
-UnexpectedToken(expected = "Statement", at = 39)
-UnexpectedToken(expected = "Greater indentation than 4. Currently: 0", at = 62)
+ParseError(expected = Label("Statement"), at = 5)
+ParseError(expected = Label("Statement"), at = 39)
+ParseError(expected = Label("Greater indentation than 4. Currently: 0"), at = 62)
+ParseError(expected = Label("New line"), at = 72)
 ```
 
 Those features make PureParser suited for:
