@@ -188,24 +188,16 @@ object ParserTests extends TestSuite:
           case Seq(ParseError(_, 0)) =>
 
     test("repeatUntil"):
-      val parser: Parser[Char, List[Char]] = Parser.repeatUntil(Parser.oneOf("ab"), Parser.literal("END"))
+      def parser(allowEmpty: Boolean): Parser[Char, List[Char]] = Parser.repeatUntil(Parser.oneOf("ab"), Parser.literal("END"), allowEmpty = allowEmpty)
 
-      test("success") - assertSuccess(parser, "abaaEND")(List('a', 'b', 'a', 'a'), 4)
-      test("onlyUntil") - assertErrors(parser, "END"):
-        case Seq(ParseError(ParseError.Pattern.Label(_), 0)) =>
-      test("unexpectedElement") - assertErrors(parser, "abacEND"):
+      test("success") - assertSuccess(parser(allowEmpty = true), "abaaEND")(List('a', 'b', 'a', 'a'), 4)
+      test("onlyUntil"):
+        test("allowEmpty") - assertSuccess(parser(allowEmpty = true), "END")(Nil, 0)
+        test("forbidEmpty") - assertErrors(parser(allowEmpty = false), "END"):
+          case Seq(ParseError(ParseError.Pattern.Label(_), 0)) =>
+      test("unexpectedElement") - assertErrors(parser(allowEmpty = true), "abacEND"):
         case Seq(ParseError(ParseError.Pattern.Label(_), 3)) =>
-      test("noUntil") - assertErrors(parser, "abaa"):
-        case Seq(ParseError(ParseError.Pattern.SomethingElse, 4)) =>
-
-    test("repeatUntil0"):
-      val parser: Parser[Char, List[Char]] = Parser.repeatUntil0(Parser.oneOf("ab"), Parser.literal("END"))
-
-      test("success") - assertSuccess(parser, "abaaEND")(List('a', 'b', 'a', 'a'), 4)
-      test("onlyUntil") - assertSuccess(parser, "END")(Nil, 0)
-      test("unexpectedElement") - assertErrors(parser, "abacEND"):
-        case Seq(ParseError(ParseError.Pattern.Label(_), 3)) =>
-      test("noUntil") - assertErrors(parser, "abaa"):
+      test("noUntil") - assertErrors(parser(allowEmpty = true), "abaa"):
         case Seq(ParseError(ParseError.Pattern.SomethingElse, 4)) =>
 
     test("repeatDiscard0"):

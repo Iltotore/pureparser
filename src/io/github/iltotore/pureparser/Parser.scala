@@ -443,15 +443,15 @@ object Parser:
     else rec(List(parser))
 
   /**
-    * Repeat a [[Parser]] until another one succeeds. Needs to successfully parse atleast one element to succeed.
+    * Repeat a [[Parser]] until another one succeeds.
     *
     * @tparam I the type of a token.
     * @tparam A the output type.
     * @param parser the [[Parser]] to repeat.
     * @param until the [[Parser]] testing if the loop should stop. Does not consume tokens.
-    * @see [[repeatUntil0]] for allowing empty [[List]].
+    * @param allowEmpty whether no match (empty list) is allowed or not.
     */
-  def repeatUntil[I, A](parser: Parser[I, A], until: Parser[I, Unit]): Parser[I, List[A]] =
+  def repeatUntil[I, A](parser: Parser[I, A], until: Parser[I, Unit], allowEmpty: Boolean = true): Parser[I, List[A]] =
 
     @tailrec
     def rec(accumulator: List[A]): Parser[I, List[A]] =
@@ -459,20 +459,8 @@ object Parser:
       if Parser.isSuccessful(until) then accumulator :+ head
       else rec(accumulator :+ head)
 
-    rec(Nil)
-
-  /**
-    * Repeat a [[Parser]] until another one succeeds. If the other ones immediately succeeds, an empty [[List]] is returned.
-    *
-    * @tparam I the type of a token.
-    * @tparam A the output type.
-    * @param parser the [[Parser]] to repeat.
-    * @param until the [[Parser]] testing if the loop should stop. Does not consume tokens.
-    * @see [[repeatUntil]] if you expect at least one element to be parsed.
-    */
-  def repeatUntil0[I, A](parser: Parser[I, A], until: Parser[I, Unit]): Parser[I, List[A]] =
-    if Parser.isSuccessful(until) then Nil
-    else Parser.repeatUntil(parser, until)
+    if allowEmpty && Parser.isSuccessful(until) then Nil
+    else rec(Nil)
 
   /**
     * Repeat the same [[Parser]], discarding its result until it fails.
