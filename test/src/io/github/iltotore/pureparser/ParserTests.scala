@@ -121,6 +121,15 @@ object ParserTests extends TestSuite:
         test("unexpected") - assertSuccess(parser, "b")(false, 0)
         test("eof") - assertSuccess(parser, "")(false, 0)
 
+    test("option"):
+      val parser: Parser[Char, Option[Char]] = Parser.option(Parser.oneOf("ab"))
+
+      test("success"):
+        test - assertSuccess(parser, "a")(Some('a'))
+        test - assertSuccess(parser, "b")(Some('b'))
+
+      test("none") - assertSuccess(parser, "c")(None, 0)
+
     test("orError"):
       val parser: Parser[Char, Unit] = Parser.expect(Parser.literal('a'), "The letter a")
 
@@ -210,6 +219,17 @@ object ParserTests extends TestSuite:
       test("onlyUnexpected") - assertSuccess(parser, "c")((), 0)
       test("eof") - assertSuccess(parser, "")(())
 
+    test("separatedBy"):
+      val parser: Parser[Char, List[Char]] = Parser.separatedBy(
+        Parser.oneOf("ab"),
+        Parser.literal(',')
+      )
+
+      test("noElement") - assertSuccess(parser, "")(Nil)
+      test("single") - assertSuccess(parser, "a")(List('a'))
+      test("multiple") - assertSuccess(parser, "a,b,a")(List('a', 'b', 'a'))
+      test("untilError") - assertSuccess(parser, "a,b,a]")(List('a', 'b', 'a'), 5)
+
     test("separatedByUntil"):
       val parser: Parser[Char, List[Char]] = Parser.separatedByUntil(
         Parser.oneOf("ab"),
@@ -224,17 +244,6 @@ object ParserTests extends TestSuite:
         case Seq(ParseError(ParseError.Pattern.Label(_), 2)) =>
       test("noUntil") - assertErrors(parser, "a,b"):
         case Seq(ParseError(ParseError.Pattern.Token(','), 3)) =>
-
-    test("separatedByUntil"):
-      val parser: Parser[Char, List[Char]] = Parser.separatedBy(
-        Parser.oneOf("ab"),
-        Parser.literal(',')
-      )
-
-      test("noElement") - assertSuccess(parser, "")(Nil)
-      test("single") - assertSuccess(parser, "a")(List('a'))
-      test("multiple") - assertSuccess(parser, "a,b,a")(List('a', 'b', 'a'))
-      test("untilError") - assertSuccess(parser, "a,b,a]")(List('a', 'b', 'a'), 5)
 
     test("separatedByReduce"):
       val intParser: Parser[Char, Int] = Parser.expect(
