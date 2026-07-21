@@ -9,6 +9,11 @@ object ParserTests extends TestSuite:
     case VarCall(name: String)
     case Assign(name: String, expr: String)
 
+  private enum Token:
+    case Literal(value: Int, span: Span)
+    case ParenOpen(span: Span)
+    case ParenClosed(span: Span)
+
   val tests = Tests:
     test("peek"):
       test("single") - assertSuccess(Parser.peek, "a")('a', 0)
@@ -71,6 +76,36 @@ object ParserTests extends TestSuite:
       test("part") - assertSuccess(parser, "1234abcd")("1234", 4)
       test("unexpected") - assertErrors(parser, "abcd1234"):
         case Seq(ParseError(ParseError.Pattern.Label(_), 0)) =>
+
+    test("matching"):
+      val parser: Parser[Char, Int] = Parser.matching[Char, Int]:
+        case 'a' => 1
+        case 'b' => 2
+
+      test("success"):
+        test - assertSuccess(parser, "a")(1)
+        test - assertSuccess(parser, "b")(2)
+
+      test("unexpected") - assertErrors(parser, "c"):
+        case Seq(ParseError(Pattern.SomethingElse, 0)) =>
+
+    test("ofType"):
+      val parser: Parser[Token, Int] = Parser.inOrder(
+        Parser.ofType[Token, Token.ParenOpen],
+        Parser.matching[Token, Int]:
+          case Token.Literal(value, _) => value,
+        Parser.ofType[Token, Token.ParenClosed]
+      )
+
+      test("success") - assertSuccessTokens(
+        parser,
+        Token.ParenOpen(Span(0, 0)),
+        Token.Literal(55, Span(1, 3)),
+        Token.ParenClosed(Span(3, 4))
+      )(55)
+
+      test("unexpected") - assertErrorsTokens(parser, Token.Literal(55, Span(0, 2))):
+        case Seq(ParseError(Pattern.SomethingElse, 0)) =>
 
     test("spaced"):
       val parser: Parser[Char, Unit] = Parser.spaced(Parser.literal('a'))

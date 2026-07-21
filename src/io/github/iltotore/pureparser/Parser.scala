@@ -6,6 +6,7 @@ import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.compiletime.erasedValue
 import scala.util.matching.Regex
+import scala.reflect.TypeTest
 
 /**
  * A parser taking tokens of type `I`, outputting a `A`.
@@ -218,6 +219,27 @@ object Parser:
    * @param pattern the regular expression describing the expected pattern.
    */
   def regex(pattern: String): Parser[Char, String] = regex(pattern.r)
+
+  /**
+    * Parse the next token only if it matches the given partial function.
+    * 
+    * @tparam I the type of a token.
+    * @tparam A the output type.
+    * @param f the function used to match the token.
+    */
+  def matching[I, A](f: PartialFunction[I, A]): Parser[I, A] =
+    val position = get
+    f.applyOrElse(Parser.next, _ => Parser.errorAndAbort(ParseError(ParseError.Pattern.SomethingElse, position)))
+
+  /**
+    * Parse the next token only if it is a subtype of `A`. Useful for matching product enum cases.
+    *
+    * @tparam I the type of a token.
+    * @tparam A the output type.
+    * @param test the [[TypeTest]] to check if the next [[I]] token is also an instance of [[A]]
+    */
+  def ofType[I, A <: I](using test: TypeTest[I, A]): Parser[I, Unit] = Parser.matching[I, Unit]:
+    case test(_) => ()
 
   /**
    * Parse a newline (CL, RF or CLRF) character.
