@@ -22,11 +22,11 @@ def loopParser(indentation: Int): Parser[Char, Statement] = Statement.Loop.apply
   )
 )
 
-val skipInlineWhitespace: Parser[Char, Unit] = Parser.repeatDiscard0(Parser.inlineWhitespace)
+val skipInlineWhitespace: Parser[Char, Unit] = Parser.repeatDiscard(Parser.inlineWhitespace)
 
 val indentationParser: Parser[Char, Int] = Parser.expect(
   Parser.inOrder(
-    Parser.repeatDiscard0(Parser.inOrder(skipInlineWhitespace, Parser.newline)),
+    Parser.repeatDiscard(Parser.inOrder(skipInlineWhitespace, Parser.newline)),
     Parser.span(skipInlineWhitespace).size,
     Parser.not(Parser.eof)
   ),

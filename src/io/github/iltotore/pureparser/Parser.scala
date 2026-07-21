@@ -260,9 +260,9 @@ object Parser:
       if skipNewlines then Parser.whitespace
       else Parser.inlineWhitespace
 
-    Parser.repeatDiscard0(skipParser)
+    Parser.repeatDiscard(skipParser)
     val result = parser
-    Parser.repeatDiscard0(skipParser)
+    Parser.repeatDiscard(skipParser)
     result
 
   /**
@@ -469,11 +469,11 @@ object Parser:
     * @param parser the [[Parser]] to repeat.
     */
   @tailrec
-  def repeatDiscard0[I](parser: Parser[I, Any]): Parser[I, Unit] =
+  def repeatDiscard[I](parser: Parser[I, Any]): Parser[I, Unit] =
     if Parser.isEOF || !Parser.isSuccessful(parser) then ()
     else
       Parser.unit(parser)
-      Parser.repeatDiscard0(parser)
+      Parser.repeatDiscard(parser)
 
   /**
     * Repeat the same [[Parser]], separated by another one, until yet another one succeeds.

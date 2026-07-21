@@ -102,7 +102,7 @@ object RecoverStrategy:
       def allDelimiterTokens = start +: end +: otherDelimiters.flatMap(Seq(_, _))
       def allDelimiters: Parser[I, Unit] = Parser.unit(Parser.oneOf(allDelimiterTokens*))
 
-      def rec: Parser[I, Any] = Parser.repeatDiscard0(
+      def rec: Parser[I, Any] = Parser.repeatDiscard(
         Parser.firstOf(
           nestedBlocks,
           Parser.andCheck(Parser.next, Parser.not(allDelimiters))

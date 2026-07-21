@@ -200,8 +200,8 @@ object ParserTests extends TestSuite:
       test("noUntil") - assertErrors(parser(allowEmpty = true), "abaa"):
         case Seq(ParseError(ParseError.Pattern.SomethingElse, 4)) =>
 
-    test("repeatDiscard0"):
-      val parser: Parser[Char, Unit] = Parser.repeatDiscard0(Parser.literal("ab"))
+    test("repeatDiscard"):
+      val parser: Parser[Char, Unit] = Parser.repeatDiscard(Parser.literal("ab"))
 
       test("success") - assertSuccess(parser, "ababab")(())
       test("untilUnexpected"):
