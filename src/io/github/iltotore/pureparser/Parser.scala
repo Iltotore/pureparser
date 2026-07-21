@@ -424,6 +424,25 @@ object Parser:
       skipUntil(until)
 
   /**
+    * Repeat a [[Parser]] until it fails.
+    *
+    * @tparam I the type of a token.
+    * @tparam A the output type.
+    * @param parser the [[Parser]] to repeat.
+    * @param allowEmpty whether no match (empty list) is allowed or not.
+    * @see [[repeatUntil]] for specifying an end token.
+    */
+  def repeat[I, A](parser: Parser[I, A], allowEmpty: Boolean = true): Parser[I, List[A]] =
+
+    @tailrec
+    def rec(accumulator: List[A]): Parser[I, List[A]] =
+      if Parser.isSuccessful(parser) then rec(accumulator :+ parser)
+      else accumulator
+
+    if allowEmpty then rec(Nil)
+    else rec(List(parser))
+
+  /**
     * Repeat a [[Parser]] until another one succeeds. Needs to successfully parse atleast one element to succeed.
     *
     * @tparam I the type of a token.

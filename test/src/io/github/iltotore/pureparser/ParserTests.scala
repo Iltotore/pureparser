@@ -178,6 +178,15 @@ object ParserTests extends TestSuite:
         case Seq(ParseError(ParseError.Pattern.SomethingElse, 3)) =>
       test("untilEOF") - assertSuccess(Parser.skipUntil(Parser.eof), "aaa")(())
 
+    test("repeat"):
+      def parser(allowEmpty: Boolean): Parser[Char, List[Char]] = Parser.repeat(Parser.oneOf("ab"), allowEmpty = allowEmpty)
+      test("one") - assertSuccess(parser(allowEmpty = true), "a")(List('a'))
+      test("multiple") - assertSuccess(parser(allowEmpty = true), "ab")(List('a', 'b'))
+      test("none"):
+        test("allowEmpty") - assertSuccess(parser(allowEmpty = true), "")(Nil)
+        test("forbidEmpty") - assertErrors(parser(allowEmpty = false), ""):
+          case Seq(ParseError(_, 0)) =>
+
     test("repeatUntil"):
       val parser: Parser[Char, List[Char]] = Parser.repeatUntil(Parser.oneOf("ab"), Parser.literal("END"))
 
