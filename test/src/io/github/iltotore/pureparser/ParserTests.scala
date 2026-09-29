@@ -150,14 +150,19 @@ object ParserTests extends TestSuite:
 
     test("isSuccessful"):
       val parser: Parser[Char, Boolean] = Parser.isSuccessful(Parser.literal('a'))
+      val parserCommit: Parser[Char, Boolean] = Parser.isSuccessful(Parser.commit(Parser.literal('a')))
 
       test("true") - assertSuccess(parser, "a")(true, 0)
       test("false"):
         test("unexpected") - assertSuccess(parser, "b")(false, 0)
         test("eof") - assertSuccess(parser, "")(false, 0)
 
+      test("commit") - assertErrors(parserCommit, "b"):
+        case Seq(ParseError(ParseError.Pattern.Token('a'), 0)) =>
+
     test("option"):
       val parser: Parser[Char, Option[Char]] = Parser.option(Parser.oneOf("ab"))
+      val parserCommit: Parser[Char, Option[Char]] = Parser.option(Parser.commit(Parser.oneOf("ab")))
 
       test("success"):
         test - assertSuccess(parser, "a")(Some('a'))
@@ -165,13 +170,20 @@ object ParserTests extends TestSuite:
 
       test("none") - assertSuccess(parser, "c")(None, 0)
 
+      test("commit") - assertErrors(parserCommit, "c"):
+        case Seq(ParseError(ParseError.Pattern.Label(_), 0)) =>
+
     test("orError"):
       val parser: Parser[Char, Unit] = Parser.expect(Parser.literal('a'), "The letter a")
+      val parserCommit: Parser[Char, Unit] = Parser.expect(Parser.commit(Parser.literal('a')), "The letter a")
 
       test("success") - assertSuccess(parser, "a")(())
+
       test("failure"):
         test("unexpected") - assertErrors(parser, "b"):
           case Seq(ParseError(ParseError.Pattern.Label("The letter a"), 0)) =>
+        test("commit") - assertErrors(parserCommit, "b"):
+          case Seq(ParseError(ParseError.Pattern.Token('a'), 0)) =>
 
     test("commit"):
       val identifier: Parser[Char, String] = Parser.expect(Parser.regex("[a-zA-Z]+"), "identifier")
@@ -196,12 +208,15 @@ object ParserTests extends TestSuite:
 
     test("not"):
       val parser: Parser[Char, Unit] = Parser.not(Parser.literal('a'))
+      val parserCommit: Parser[Char, Unit] = Parser.not(Parser.commit(Parser.literal('a')))
 
       test("success"):
         test("notA") - assertSuccess(parser, "b")((), 0)
         test("eof") - assertSuccess(parser, "")((), 0)
       test("a") - assertErrors(parser, "a"):
         case Seq(ParseError(ParseError.Pattern.SomethingElse, 0)) =>
+      test("commit") - assertErrors(parserCommit, "b"):
+        case Seq(ParseError(ParseError.Pattern.Token('a'), 0)) =>
 
     test("andCheck"):
       val parser: Parser[Char, Char] = Parser.andCheck(

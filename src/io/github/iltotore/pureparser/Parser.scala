@@ -353,10 +353,12 @@ object Parser:
    * @param parser the [[Parser]] to try.
    */
   def isSuccessful[I](parser: Parser[I, Any]): Parser[I, Boolean] =
-    localState(identity)(
-      recoverSome(Writer(Parser.as(parser, true))._2):
+    localState(identity):
+      val snapshot = Writer.snapshot
+      val result = recoverSome(Parser.as(parser, true)):
         case false => false
-    )
+      Writer.rollback(snapshot)
+      result
 
   /**
    * Use the given [[Parser]] and wrap the result in a [[Some]] if it succeeds. If it fails, [[None]] is returned.
