@@ -11,7 +11,7 @@ import mill.util.VcsVersion
 object `package` extends ScalaModule, ScalafmtModule, PublishModule, VcsVersionModule:
   self =>
 
-  def scalaVersion = "3.3.7"
+  def scalaVersion = "3.9.0"
 
   def mvnDeps = Seq(
     mvn"com.github.ghostdogpr::purelogic::0.2.3"
