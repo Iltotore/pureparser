@@ -124,7 +124,7 @@ object `package` extends ScalaModule, ScalafmtModule, PublishModule, VcsVersionM
     object json extends ExampleModule
 
   object web extends ScalaJSModule, ScalafmtModule, TailwindModule:
-    def scalaVersion = "3.8.3"
+    def scalaVersion = self.scalaVersion
 
     def scalaJSVersion = self.js.scalaJSVersion
 
