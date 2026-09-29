@@ -90,7 +90,7 @@ object `package` extends ScalaModule, ScalafmtModule, PublishModule, VcsVersionM
 
     def scalaVersion = self.scalaVersion
 
-    def scalaJSVersion = "1.21.0"
+    def scalaJSVersion = "1.22.0"
 
     def mvnDeps = self.mvnDeps
 
