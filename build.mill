@@ -14,7 +14,7 @@ object `package` extends ScalaModule, ScalafmtModule, PublishModule, VcsVersionM
   def scalaVersion = "3.9.0"
 
   def mvnDeps = Seq(
-    mvn"com.github.ghostdogpr::purelogic::0.2.3"
+    mvn"com.github.ghostdogpr::purelogic::0.3.0"
   )
 
   def artifactName = "pureparser"
