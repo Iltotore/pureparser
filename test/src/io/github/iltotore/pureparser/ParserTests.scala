@@ -78,7 +78,7 @@ object ParserTests extends TestSuite:
         case Seq(ParseError(ParseError.Pattern.Label(_), 0)) =>
 
     test("matching"):
-      val parser: Parser[Char, Int] = Parser.matching[Char, Int]:
+      val parser: Parser[Char, Int] = Parser.matching[Char]:
         case 'a' => 1
         case 'b' => 2
 
@@ -92,7 +92,7 @@ object ParserTests extends TestSuite:
     test("ofType"):
       val parser: Parser[Token, Int] = Parser.inOrder(
         Parser.ofType[Token, Token.ParenOpen],
-        Parser.matching[Token, Int]:
+        Parser.matching[Token]:
           case Token.Literal(value, _) => value,
         Parser.ofType[Token, Token.ParenClosed]
       )

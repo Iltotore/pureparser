@@ -1,5 +1,6 @@
 package io.github.iltotore.pureparser
 
+import io.github.iltotore.pureparser.util.Dummy
 import io.github.iltotore.pureparser.util.Zip
 import purelogic.*
 import scala.annotation.nowarn
@@ -227,7 +228,7 @@ object Parser:
     * @tparam A the output type.
     * @param f the function used to match the token.
     */
-  def matching[I, A](f: PartialFunction[I, A]): Parser[I, A] =
+  def matching[I](using Dummy)[A](f: PartialFunction[I, A]): Parser[I, A] =
     val position = get
     f.applyOrElse(Parser.next, _ => Parser.errorAndAbort(ParseError(ParseError.Pattern.SomethingElse, position)))
 
@@ -238,7 +239,7 @@ object Parser:
     * @tparam A the output type.
     * @param test the [[TypeTest]] to check if the next [[I]] token is also an instance of [[A]]
     */
-  def ofType[I, A <: I](using test: TypeTest[I, A]): Parser[I, Unit] = Parser.matching[I, Unit]:
+  def ofType[I, A](using test: TypeTest[I, A]): Parser[I, Unit] = Parser.matching[I][Unit]:
     case test(_) => ()
 
   /**
